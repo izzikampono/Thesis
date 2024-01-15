@@ -257,9 +257,7 @@ def get_joint_DR(DR0,DR1):
 def sota_strategy(P1,P2, game_type):
     if game_type=="zerosum":
         value , DR1 =  LP_zerosum(1,P2)
-        print(DR1)
-        value , DR0 , DR1_=  LP_zerosum(0,P1)
-
+        value , DR0 =  LP_zerosum(0,P1)
         DR = get_joint_DR(DR0,DR1)
         return value, DR,DR0,DR1
     if game_type=="stackelberg":
@@ -439,11 +437,6 @@ class AlphaVector:
             value , DR , DR0 , DR1 = LP(payoffs[0],payoffs[1])
         else:
             # print("HERE IN SOTA IF STATEMENT")
-            print(f"PAYOFFS FOR {game_type} game where SOTA is set to = {self.sota} ")
-            print(f"leaders payoff : \n{payoffs[0]}")
-            print(f"followers payoff : \n{payoffs[1]}")
-            
-
             value,DR,DR0,DR1 = sota_strategy(payoffs[0],payoffs[1],game_type)
         alpha = beta.get_alpha_vector(DecisionRule(DR,DR0,DR1))
         if (alpha.sota !=self.sota):
@@ -506,6 +499,7 @@ class PolicyTree:
             
 class ValueFunction:
     def __init__(self,horizon, initial_belief,sota=False):
+        global states
         self.horizon = horizon
         self.vector_sets = {}
         self.sota=sota
@@ -577,25 +571,24 @@ class ValueFunction:
                 #get actions of the other agent
                 for u_not_agent in actions[int(not agent)]:
 
-                    uj = problem.get_joint_action(u_agent,u_not_agent)
-                    for z in joint_observations:
-                        b_next = next_belief(belief,uj,z)
-                        subtree = self.tree_extraction(b_next,agent,timestep+1)
-                        policy.add_subtree(b_next,subtree)
+                    joint_action = problem.get_joint_action(u_agent,u_not_agent)
+                    for joint_observation in joint_observations:
+                        belief_next = next_belief(belief,joint_action,joint_observation)
+                        subtree = self.tree_extraction(belief_next,agent,timestep+1)
+                        policy.add_subtree(belief_next,subtree)
                     
         policy.data = DR.agents[agent]
         return policy
     
-    def value_initial_belief(self):
-        print("values at initial belief:")
-        V0 = []
-        V1 = []
+   
+    
+    def get_values_initial_belief(self):
+        values_leader,values_follower = [],[]
         for alpha in self.vector_sets[0]:
-            v0,v1 = alpha.get_value(self.initial_belief)
-            V0.append(v0)
-            V1.append(v1)
-        print(f"leader = {V0}\nfollower = {V1}")
-        return V0,V1
+            value_leader,value_follower = alpha.get_value(self.initial_belief)
+            values_leader.append(value_leader)
+            values_follower.append(value_follower)
+        return values_leader,values_follower
     
 
 
@@ -661,7 +654,12 @@ class BeliefSpace:
         else : print("err0r : no belief found")
         
 
-    
+    def belief_size(self):
+        size = 0
+        for timestep in range(self.horizon+1):
+            size+=len(self.belief_states[timestep])
+        return size
+
     def expansion(self):
         """populates self.belief_state table"""
         for timestep in range(1,self.horizon):

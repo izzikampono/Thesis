@@ -19,7 +19,9 @@ if len(sys.argv)> 5 :
     planning_horizon = int(sys.argv[3])
     num_iterations = int(sys.argv[4])
     sota_ = bool(int(sys.argv[5]))
-else : print("not enough arguments")
+else : 
+    print("not enough arguments")
+    sys.exit()
 
 #import problem
 problem = DecPOMDP(file_name, 1,horizon=planning_horizon)
