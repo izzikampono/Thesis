@@ -9,7 +9,8 @@ import time
 
 
 # input : file_name , game type  , planning horizon, num iterations,sota(1 or 0)
-
+# sample : 
+# python test.py dectiger cooperative 3 3 1
 if len(sys.argv) < 2:
     print("err0r : not enough arguments given")
     sys.exit(1)
@@ -42,8 +43,7 @@ solve_time = end_time - start_time
 
 # results
 print(f"\n{game_type} {file_name} problem with {num_iterations} iterations solved in ", solve_time, "seconds\n")
-
-game.value_function.value_initial_belief()
+print(f"value at initial belief (V0,V1) :\n{game.value_function.get_values_initial_belief()}")
 
 print("print policy tree?")
 if input("answer (y/n) :") =="y":
