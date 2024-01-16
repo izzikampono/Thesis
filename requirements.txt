@@ -5,3 +5,4 @@ pandas==1.0.5
 scipy==1.10.1
 seaborn==0.12.2
 tikzplotlib==0.10.1
+# IBM MODULE : pip install docplex 

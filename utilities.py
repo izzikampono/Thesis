@@ -278,6 +278,7 @@ def sota_strategy(P1,P2, game_type):
 def LP_zerosum2(payoff):
     "linear program for SOTA of zerosum game"
     milp = Model(f"SOTA zerosum tiger")
+        
 
     #initialize linear program variables
     DR = {}
@@ -290,7 +291,7 @@ def LP_zerosum2(payoff):
     V = milp.continuous_var(name="V")
     
     # define objective function 
-    milp.maximize(V)
+    milp.minimize(V)
 
 
     # define constraints 
@@ -328,14 +329,14 @@ def LP_zerosum(agent,payoff):
     V = []
     for action in actions[agent]:
         DR.append(milp.continuous_var(name=f"a{agent}_{action}",ub=1,lb=0))
-        V.append(milp.continuous_var(name=f"V{action}",lb = 0))
-    # V = milp.continuous_var_list(len(actions[agent]),name=[f"V_{i}" for i in actions[agent]])
-    # V = milp.continuous_var(name="V")
+    V = milp.continuous_var(name="V")
 
     # define objective function 
-    value = 0
-    for i in V:value+=i
-    milp.maximize(value)
+    
+
+    if agent==0:
+        milp.maximize(V)
+    else :milp.minimize(V)
 
 
 
