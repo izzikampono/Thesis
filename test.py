@@ -5,7 +5,7 @@ import pandas as pd
 import random
 from decpomdp import DecPOMDP
 from utilities import *
-import utilities
+from Classes import *
 import time
 
 
@@ -27,10 +27,11 @@ else :
 
 #import problem
 problem = DecPOMDP(file_name, 1,horizon=planning_horizon)
-utilities.set_problem(problem,planning_horizon)
-problem.reset()
+constants = Constants(problem,planning_horizon)
+utilities = Utilities(constants)
 
-print(f"{game_type} initiated with SOTA set to = {sota_}")
+
+print(f"{problem.name} {game_type} initiated with SOTA set to = {sota_}")
 
 # solve
 start_time = time.time()

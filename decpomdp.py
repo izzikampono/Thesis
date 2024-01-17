@@ -4,6 +4,7 @@ from parser import read_file, read_count_or_enum, read_field, read_start, read_i
 
 class DecPOMDP:
     def __init__(self, problem, num_players, horizon, observation_histories = False, truncation = np.inf):
+        self.name = problem
         self.horizon = horizon
         self.observation_histories = observation_histories
         self.truncation = truncation
