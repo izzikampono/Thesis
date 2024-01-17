@@ -26,16 +26,16 @@ else :
     sys.exit()
 
 #import problem
-problem = DecPOMDP(file_name, 1,horizon=planning_horizon)
-constants = Constants(problem,planning_horizon)
+CONSTANT = DecPOMDP(file_name, 1,horizon=planning_horizon)
+constants = Constants(CONSTANT,planning_horizon)
 utilities = Utilities(constants)
 
 
-print(f"{problem.name} {game_type} initiated with SOTA set to = {sota_}")
+print(f"{CONSTANT.name} {game_type} initiated with SOTA set to = {sota_}")
 
 # solve
 start_time = time.time()
-game = PBVI(problem,planning_horizon,0.1,game_type,sota=sota_)
+game = PBVI(CONSTANT,planning_horizon,0.1,game_type,sota=sota_)
 policy = game.solve(num_iterations,1)
 end_time = time.time()
 solve_time = end_time - start_time

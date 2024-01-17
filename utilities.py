@@ -1,6 +1,8 @@
+from warnings import catch_warnings
 import numpy as np
 import pandas as pd
 import random
+import warnings
 from decpomdp import DecPOMDP
 import matplotlib.pyplot as plt
 from docplex.mp.model import Model
@@ -30,12 +32,6 @@ class Utilities:
             print("Dependencies installed successfully.")
         except subprocess.CalledProcessError as e:
             print(f"Error: Failed to install dependencies. {e}")
-
-
-
-
-
-
 
     def print_nested_dict(self,d, depth=0, parent_key=None, last_child=False):
         if parent_key is not None:
@@ -82,8 +78,14 @@ class Utilities:
         return np.array(samples)
 
     def normalize(self,vector):
-        vector = np.array(vector) / np.sum(vector)
-        return vector
+        warnings.filterwarnings("error", category=RuntimeWarning)
+
+        try:
+            vector = np.array(vector) / np.sum(vector)
+        except RuntimeWarning as rw:
+            print(f"RuntimeWarning: {rw}")
+            print(f"cannot normalize vector V:\n {vector}")
+            sys.exit
 
 
     def  observation_probability(self,joint_observation,belief,joint_action):
@@ -98,7 +100,7 @@ class Utilities:
     def next_belief(self,belief,joint_DR,joint_observation):
         """function to calculate next belief based on current belief, DR/joint action , and observation"""
         # returns the value of b1
-        next_belief = []
+        next_belief = np.zeros(len(belief))
 
         if type(joint_observation) != int :
             joint_observation = self.PROBLEM.joint_observations.index(joint_observation)
@@ -109,7 +111,7 @@ class Utilities:
                 value = 0
                 for state in self.STATES:
                     value += belief[state] * self.TRANSITION_FUNCTION[joint_DR][state][next_state]  * self.OBSERVATION_FUNCTION[joint_DR][state][joint_observation]
-                next_belief.append(value)
+                next_belief[next_state]+=value
             
         else:   # if joint_DR is a decision rule
             for next_state in self.STATES:
@@ -117,15 +119,17 @@ class Utilities:
                 for state in self.STATES:
                     for joint_action in self.JOINT_ACTIONS:
                         value += belief[state] * joint_DR[joint_action] * self.TRANSITION_FUNCTION[joint_action][state][next_state]  * self.OBSERVATION_FUNCTION[joint_action][state][joint_observation]
-                next_belief.append(value)
+                next_belief[next_state]+=value
 
         next_belief = self.normalize(next_belief)
 
-        if np.sum(next_belief)<= 1 and np.sum(next_belief)> 0.99999:
-            return np.array(next_belief)
+        if np.sum(next_belief)<= 1.001 and np.sum(next_belief)> 0.99999:
+            return next_belief
         else:
             print("err0r : belief doesn not sum up to 1\n")
-            print(next_belief,"\n")
+            print(f"current belief: \n{belief}")
+            print(f"next belief :\n{next_belief}")
+            print(f"sum : {np.sum(next_belief)}")
             sys.exit()
         return np.array(next_belief)
         
@@ -162,6 +166,8 @@ class Utilities:
                     rhs += Q2[joint_action] * leader_action_probability
             milp.add_constraint(lhs>=rhs)
         
+
+        ## add seperability constraints of joint_DRs and singular_DRs 
         joint_sum = 0
         for leader_action in self.ACTIONS[0]:
             value = 0
@@ -181,19 +187,6 @@ class Utilities:
 
 
 
-
-
-        #add seperability constraints
-            
-        
-
-        # milp.add_constraint(a0_00 + a0_01 + a0_02 == a1_0)
-        # milp.add_constraint(a0_10 + a0_11 + a0_12 == a1_1)
-        # milp.add_constraint(a0_20 + a0_21 + a0_22 == a1_2)
-        # milp.add_constraint(a0_00 + a0_10 + a0_20 == a2_0)
-        # milp.add_constraint(a0_01 + a0_11 + a0_21 == a2_1)
-        # milp.add_constraint(a0_02 + a0_12 + a0_22 == a2_2)
-        # milp.add_constraint(a0_00 + a0_01 + a0_02+ a0_10+ a0_11 + a0_12+ a0_20+ a0_21 + a0_22 ==1)
 
         sol = milp.solve()
         # print(f"value solution = {milp.solution.get_objective_value()}")
