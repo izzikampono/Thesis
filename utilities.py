@@ -82,9 +82,10 @@ class Utilities:
 
         try:
             vector = np.array(vector) / np.sum(vector)
+            return vector
         except RuntimeWarning as rw:
             print(f"RuntimeWarning: {rw}")
-            print(f"cannot normalize vector V:\n {vector}")
+            print(f"cannot normalize vector V: {vector}")
             sys.exit
 
 
@@ -97,43 +98,7 @@ class Utilities:
         return sum
 
 
-    def next_belief(self,belief,joint_DR,joint_observation):
-        """function to calculate next belief based on current belief, DR/joint action , and observation"""
-        # returns the value of b1
-        next_belief = np.zeros(len(belief))
-
-        if type(joint_observation) != int :
-            joint_observation = self.PROBLEM.joint_observations.index(joint_observation)
-
-
-        if type(joint_DR) == int: # if joint_DR enterred as a deterministic action 
-            for next_state in self.STATES:
-                value = 0
-                for state in self.STATES:
-                    value += belief[state] * self.TRANSITION_FUNCTION[joint_DR][state][next_state]  * self.OBSERVATION_FUNCTION[joint_DR][state][joint_observation]
-                next_belief[next_state]+=value
-            
-        else:   # if joint_DR is a decision rule
-            for next_state in self.STATES:
-                value = 0
-                for state in self.STATES:
-                    for joint_action in self.JOINT_ACTIONS:
-                        value += belief[state] * joint_DR[joint_action] * self.TRANSITION_FUNCTION[joint_action][state][next_state]  * self.OBSERVATION_FUNCTION[joint_action][state][joint_observation]
-                next_belief[next_state]+=value
-
-        next_belief = self.normalize(next_belief)
-
-        if np.sum(next_belief)<= 1.001 and np.sum(next_belief)> 0.99999:
-            return next_belief
-        else:
-            print("err0r : belief doesn not sum up to 1\n")
-            print(f"current belief: \n{belief}")
-            print(f"next belief :\n{next_belief}")
-            print(f"sum : {np.sum(next_belief)}")
-            sys.exit()
-        return np.array(next_belief)
-        
-
+    
 
     def LP(self,Q1,Q2):
     

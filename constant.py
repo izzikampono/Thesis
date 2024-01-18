@@ -8,12 +8,12 @@ class Constants:
         self.HORIZON = problem.horizon
         self.NAME = problem.name
         self.PROBLEM = problem
-        self.STATES = [i for i in range(len(self.PROBLEM.states))]
-        self.ACTIONS = [[i for i in range(len(self.PROBLEM.actions[0]))],[j for j in range(len(self.PROBLEM.actions[1]))]]
-        self.JOINT_ACTIONS = [i for i in range(len(self.PROBLEM.joint_actions))]
-        self.JOINT_OBSERVATIONS = [i for i in range(len(self.PROBLEM.joint_observations))]
-        self.TRANSITION_FUNCTION = self.PROBLEM.transition_fn
-        self.OBSERVATION_FUNCTION = self.PROBLEM.observation_fn
+        self.STATES = [i for i in range(len(problem.states))]
+        self.ACTIONS = [[i for i in range(len(problem.actions[0]))],[j for j in range(len(problem.actions[1]))]]
+        self.JOINT_ACTIONS = [i for i in range(len(problem.joint_actions))]
+        self.JOINT_OBSERVATIONS = [i for i in range(len(problem.joint_observations))]
+        self.TRANSITION_FUNCTION = problem.transition_fn
+        self.OBSERVATION_FUNCTION = problem.observation_fn
         self.REWARDS = self.initialize_rewards()
         self.PROBLEM.reset()
 

@@ -145,10 +145,10 @@ class ValueFunction:
         self.vector_sets = {}
         self.sota=sota
         self.initial_belief = np.array(initial_belief)
-        for timestep in range(horizon+1):
+        for timestep in range(horizon+2):
             self.vector_sets[timestep] = []
         vector = np.zeros(len(CONSTANT.STATES))
-        self.add_alpha_vector(AlphaVector(None,vector,vector,self.sota),horizon)
+        self.add_alpha_vector(AlphaVector(None,vector,vector,self.sota),horizon+1)
     
     def add_alpha_vector(self,alpha,timestep):
         self.vector_sets[timestep].append(alpha)
@@ -188,6 +188,7 @@ class ValueFunction:
         
     
     def tree_extraction(self,belief, agent,timestep):
+        global utilities
 
         # edge case at last horizon
         if timestep == self.horizon : return PolicyTree(None)
@@ -214,7 +215,7 @@ class ValueFunction:
 
                     joint_action = CONSTANT.PROBLEM.get_joint_action(u_agent,u_not_agent)
                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                        belief_next = utilities.next_belief(belief,joint_action,joint_observation)
+                        belief_next = BeliefSpace.next_belief(belief,joint_action,joint_observation)
                         subtree = self.tree_extraction(belief_next,agent,timestep+1)
                         policy.add_subtree(belief_next,subtree)
                     
@@ -251,15 +252,52 @@ class PBVI:
         for timestep in range(self.horizon,-1,-1):
             for belief in self.belief_space.belief_states[timestep]:
                 self.value_function.backup(belief,timestep,self.gametype)
+            print(f"\tbackup at timestep {timestep} done")
+        print("\tbackward induction done")
            
     def solve(self,iterations,decay):
+        self.belief_space.expansion()
         for _ in range(iterations):
-            self.belief_space.expansion()
+            print(f"iteration : {_}")
             self.backward_induction()
             self.density /= decay #hyperparameter
-        self.policies[0] = self.value_function.tree_extraction(self.problem.b0,0,0)    
-        self.policies[1] = self.value_function.tree_extraction(self.problem.b0,1,0)  
+        self.policies[0] = self.tree_extraction(self.problem.b0,0,0)    
+        self.policies[1] = self.tree_extraction(self.problem.b0,1,0)  
         return self.policies   
+    def tree_extraction(self,belief, agent,timestep):
+        global utilities
+
+        # edge case at last horizon
+        if timestep == self.horizon : return PolicyTree(None)
+
+        #initialize policy and DR_bt
+        policy = PolicyTree(None)
+        DR = DecisionRule(None,None,None)
+
+        max = -np.inf
+
+        # extract decision rule of agent from value function at current belief
+        for alpha in self.value_function.vector_sets[timestep]:
+            value = alpha.get_value(belief)
+            if (max<value[agent]) :
+                max = value[agent]
+                DR = alpha.DR
+
+        for u_agent in CONSTANT.ACTIONS[agent]:
+            #if probability of action is not 0
+            if DR.agents[agent][u_agent] > 0:
+
+                #get actions of the other agent
+                for u_not_agent in CONSTANT.ACTIONS[int(not agent)]:
+
+                    joint_action = CONSTANT.PROBLEM.get_joint_action(u_agent,u_not_agent)
+                    for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
+                        belief_next = self.belief_space.next_belief(belief,joint_action,joint_observation)
+                        subtree = self.tree_extraction(belief_next,agent,timestep+1)
+                        policy.add_subtree(belief_next,subtree)
+                    
+        policy.data = DR.agents[agent]
+        return policy
     
 ############################################################################################################     
 
@@ -271,6 +309,7 @@ class BeliefSpace:
             self.belief_states[timestep] = []
         self.belief_states[0] = [initial_belief]
         self.horizon = horizon
+        print(f"belief space initialized for {self.horizon} timesteps with initial belief = ",self.belief_states[0])
 
 
     def distance(self,belief,timestep):
@@ -303,14 +342,52 @@ class BeliefSpace:
 
     def expansion(self):
         """populates self.belief_state table"""
-        for timestep in range(1,self.horizon):
+        for timestep in range(1,self.horizon+1):
             for previous_belief in self.belief_states[timestep-1]:
                 for joint_action in CONSTANT.JOINT_ACTIONS:
                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                        belief = utilities.next_belief(previous_belief,joint_action,joint_observation)
+                        belief = self.next_belief(previous_belief,joint_action,joint_observation)
                         if self.distance(belief,timestep):
                             self.belief_states[timestep].append(belief)
                             # print(f"belief point added at timestep {timestep}: {belief}")
-                          
+        print("\tbelief expansion done")  
+    
+    def next_belief(self,belief,joint_DR,joint_observation):
+        """function to calculate next belief based on current belief, DR/joint action , and observation"""
+        # returns the value of b1
+        next_belief = np.zeros(len(belief))
 
-                        
+        if type(joint_observation) != int :
+            joint_observation = self.PROBLEM.joint_observations.index(joint_observation)
+
+
+        if type(joint_DR) == int: # if joint_DR enterred as a deterministic action 
+            # print(f"{CONSTANT.TRANSITION_FUNCTION} and {CONSTANT.OBSERVATION_FUNCTION}")
+            for next_state in CONSTANT.STATES:
+                value = 0
+                for state in CONSTANT.STATES:
+                    value += belief[state] * CONSTANT.TRANSITION_FUNCTION[joint_DR][state][next_state]  * CONSTANT.OBSERVATION_FUNCTION[joint_DR][state][joint_observation]
+
+                next_belief[next_state]+=value    
+        else:   # if joint_DR is a decision rule
+            for next_state in CONSTANT.STATES:
+                value = 0
+                for state in CONSTANT.STATES:
+                    for joint_action in CONSTANT.JOINT_ACTIONS:
+                        value += belief[state] * joint_DR[joint_action] * CONSTANT.TRANSITION_FUNCTION[joint_action][state][next_state]  * CONSTANT.OBSERVATION_FUNCTION[joint_action][state][joint_observation]
+                next_belief[next_state]+=value
+
+        if np.sum(next_belief) ==0 :
+            return next_belief
+        next_belief = utilities.normalize(next_belief)
+
+        if np.sum(next_belief)<= 1.001 and np.sum(next_belief)> 0.99999:
+            return next_belief
+        else:
+            print("err0r : belief doesn not sum up to 1\n")
+            print(f"current belief: \n{belief}")
+            print(f"next belief :\n{next_belief}")
+            print(f"sum : {np.sum(next_belief)}")
+            sys.exit()
+        return np.array(next_belief)        
+
