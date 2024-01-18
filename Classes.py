@@ -257,7 +257,7 @@ class PBVI:
            
     def solve(self,iterations,decay):
         self.belief_space.expansion()
-        for _ in range(iterations):
+        for _ in range(1,iterations):
             print(f"iteration : {_}")
             self.backward_induction()
             self.density /= decay #hyperparameter
