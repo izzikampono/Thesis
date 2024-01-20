@@ -103,8 +103,8 @@ class Utilities:
     def LP(self,Q1,Q2):
     
         milp = Model(f"{self.PROBLEM.name} problem")
-        leader_DR = milp.continuous_var_list(len(self.ACTIONS[0]),name = [f"a1_{i}" for i in self.ACTIONS[1]],ub=1,lb=0)
-        follower_DR = milp.binary_var_list(len(self.ACTIONS[1]), name = [f"a0_{i}" for i in self.ACTIONS[0]])
+        leader_DR = milp.continuous_var_list(len(self.ACTIONS[0]),name = [f"a0_{i}" for i in self.ACTIONS[1]],ub=1,lb=0)
+        follower_DR = milp.binary_var_list(len(self.ACTIONS[1]), name = [f"a1_{i}" for i in self.ACTIONS[0]])
         joint_DR = milp.continuous_var_list(len(self.JOINT_ACTIONS),name  = [f"aj_{i}" for i in self.JOINT_ACTIONS],ub=1,lb=0)
         
 
@@ -154,6 +154,7 @@ class Utilities:
 
 
         sol = milp.solve()
+        milp.export_as_lp(f"Stackelberg_LP")
         # print(f"value solution = {milp.solution.get_objective_value()}")
         return milp.solution.get_objective_value(),milp.solution.get_values(joint_DR), milp.solution.get_values(leader_DR), milp.solution.get_values(follower_DR)
 
@@ -186,7 +187,7 @@ class Utilities:
             action_0, action_1 = self.PROBLEM.get_seperate_action(optimal_joint_action)
             DR0 = np.identity(len(self.ACTIONS[0]))[action_0]
             DR1 = np.identity(len(self.ACTIONS[1]))[action_1]
-            return None,DR_joint,DR0,DR1
+            return max,DR_joint,DR0,DR1
 
 
     def zerosum_lp_leader(self,payoff):

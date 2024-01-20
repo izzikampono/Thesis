@@ -4,8 +4,7 @@ import numpy as np
 import pandas as pd
 import random
 from decpomdp import DecPOMDP
-from utilities import *
-from Classes import *
+import Classes
 import time
 
 
@@ -26,16 +25,13 @@ else :
     sys.exit()
 
 #import problem
-CONSTANT = DecPOMDP(file_name, 1,horizon=planning_horizon)
-constants = Constants(CONSTANT,planning_horizon)
-utilities = Utilities(constants)
+problem = DecPOMDP(file_name, 1,horizon=planning_horizon)
+Classes.set_problem(problem)
 
-
-print(f"{CONSTANT.name} {game_type} initiated with SOTA set to = {sota_}")
 
 # solve
 start_time = time.time()
-game = PBVI(CONSTANT,planning_horizon,0.1,game_type,sota=sota_)
+game = Classes.PBVI(problem,planning_horizon,0.1,game_type,sota=sota_)
 policy = game.solve(num_iterations,1)
 end_time = time.time()
 solve_time = end_time - start_time

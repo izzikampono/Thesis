@@ -55,7 +55,7 @@ class DecPOMDP:
     def get_joint_action(self,u1,u2):
         return self.action_dictionary[f"{u1}{u2}"]
     def get_seperate_action(self,uj):
-        action_Join = self.action_dict[uj]
+        action_Join = int(self.action_dict[uj])
         return action_Join//10,action_Join%10
     def reset(self):
         self.state = np.random.choice(self.states, p = self.b0)
