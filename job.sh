@@ -3,7 +3,7 @@
 #SBATCH --mem=2G
 #SBATCH --time=00:10:00
 #SBATCH --ntasks=10
-#SBATCH --output= $arg1.csv
+#SBATCH --output= $1.csv
 #SBATCH --job-name=python_cpu
 #SBATCH --mem=8000
 module purge
@@ -19,10 +19,9 @@ echo "Argument 1: $1"
 
 source /scratch/s3918343/venvs/thesis/bin/activate
 problem="$1"
-file = $problem+".csv"
 
 cd /scratch/s3918343/venvs/thesis/Thesis
 
-python experiment.py problem=$problem horizon=10 iter=10 > $file
+python experiment.py problem="$1" horizon=10 iter=10
 
 deactivate
