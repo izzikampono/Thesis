@@ -21,16 +21,17 @@ slurm_script="job2.sh"
 cat > "$slurm_script" <<EOL
 #!/bin/bash
 #SBATCH --job-name=python_cpu
-#SBATCH --output=$prob.csv
+#SBATCH --output=$1.csv
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=2G
 #SBATCH --error=error_file.txt
 #SBATCH --mem=8000
 #SBATCH --time=00:10:00
 
-echo "Problem: $problem"
+echo "Problem: $1"
+echo "Filename :SBATCH --outpu
 
-# Activate your Python environment 
+# Activate your Python environment
 module purge
 module load Python/3.9.6-GCCcore-11.2.0
 source /scratch/s3918343/venvs/thesis/bin/activate
@@ -41,16 +42,16 @@ pip install -r requirements.txt
 cd /scratch/s3918343/venvs/thesis/Thesis
 
 # Your Slurm job commands go here
-python experiment.py problem="$problem" horizon=10 iter=10
+python experiment.py problem="$1" horizon=10 iter=10
 
 deactivate
 EOL
 
 # Make the Slurm script executable
-chmod +x "$slurm_script"
+# chmod +x "$slurm_script"
 
 # Submit the Slurm job
-sbatch "$slurm_script"
+sbatch "$slurm_script" $problem
 
 # Exit the script
 exit 0
