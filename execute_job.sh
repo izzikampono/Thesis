@@ -29,7 +29,6 @@ cat > "$slurm_script" <<EOL
 #SBATCH --time=00:10:00
 
 echo "Problem: $1"
-echo "Filename :SBATCH --outpu
 
 # Activate your Python environment
 module purge
