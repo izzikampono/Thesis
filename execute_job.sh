@@ -31,7 +31,7 @@ cat > "$slurm_script" <<EOL
 echo "Problem: $problem"
 
 # Activate your Python environment 
-module purge
+module --force purge
 module load Python/3.9.6-GCCcore-11.2.0
 source /scratch/s3918343/venvs/thesis/bin/activate
 
