@@ -1,0 +1,7 @@
+gametype,SOTA,horizon,num_iterations,average_time,number_of_beliefs,leader_value_b0,follower_value_b0
+cooperative,False,1,2,0.11717414855957031,4,[-4.0],[-4.0]
+cooperative,False,2,2,0.20530200004577637,7,[-6.0],[-6.0]
+cooperative,False,3,2,0.43017029762268066,10,[-8.0],[-8.0]
+cooperative,True,1,2,0.0039708614349365234,4,[-4.0],[-4.0]
+cooperative,True,2,2,0.009049177169799805,7,[-6.0],[-6.0]
+cooperative,True,3,2,0.010907173156738281,10,[-8.0],[-8.0]

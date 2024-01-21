@@ -1,0 +1,7 @@
+gametype,SOTA,horizon,num_iterations,average_time,number_of_beliefs,leader_value_b0,follower_value_b0
+stackelberg,False,1,2,0.11739063262939453,4,[-4.0],[-19.0]
+stackelberg,False,2,2,0.247283935546875,7,[-6.0],[-28.5]
+stackelberg,False,3,2,0.3783440589904785,10,[-8.0],[-38.0]
+stackelberg,True,1,2,0.1436021327972412,4,[-4.0],[-9.5]
+stackelberg,True,2,2,0.21717405319213867,7,[-6.0],[-9.5]
+stackelberg,True,3,2,0.3253591060638428,10,[-8.0],[-9.5]
