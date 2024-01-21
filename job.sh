@@ -3,7 +3,7 @@
 #SBATCH --mem=2G
 #SBATCH --time=00:10:00
 #SBATCH --ntasks=10
-#SBATCH --output=output_file.csv
+#SBATCH --output= $arg1.csv
 #SBATCH --job-name=python_cpu
 #SBATCH --mem=8000
 module purge
