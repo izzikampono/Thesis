@@ -35,6 +35,9 @@ module purge
 module load Python/3.9.6-GCCcore-11.2.0
 source /scratch/s3918343/venvs/thesis/bin/activate
 
+#install all required libraries
+pip install -r requirements.txt
+
 cd /scratch/s3918343/venvs/thesis/Thesis
 
 # Your Slurm job commands go here
