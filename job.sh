@@ -18,8 +18,8 @@ fi
 echo "Argument 1: $arg1"
 
 source /scratch/s3918343/venvs/thesis/bin/activate
-problem="$arg1"
-file = "$arg1"+".csv"
+problem="$1"
+file = $problem+".csv"
 
 cd /scratch/s3918343/venvs/thesis/Thesis
 
