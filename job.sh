@@ -9,11 +9,13 @@
 module purge
 module load Python/3.9.6-GCCcore-11.2.0
 
- 
+
 source /scratch/s3918343/venvs/thesis/bin/activate
+output_file="output.csv"
+
 
 cd /scratch/s3918343/venvs/thesis/Thesis
 
-python experiment.py problem=dectiger horizon=3 iter=3
+python experiment.py problem=dectiger horizon=3 iter=3 > "$output_file"
 
 deactivate
