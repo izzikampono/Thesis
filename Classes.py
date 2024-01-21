@@ -160,7 +160,7 @@ class PolicyTree:
         self.subtrees[key] = subtree   
 
     def print_trees(self, indent=0):
-        print(" " * indent + "value : " +str(self.data[0]) + ", joint DR : " +str(self.data[1]))
+        print(" " * indent + "Decision Rule: " +str(self.data[0]) + ", value: " +str(self.data[1]))
         for key, subtree in self.subtrees.items():
             print("" * (indent + 2) + "└─ "+ f"belief : {key.value}")
             subtree.print_trees(indent + 5)
@@ -331,7 +331,7 @@ class PBVI:
                         if self.belief_space.distance(belief_next,timestep):
                             subtree = self.tree_extraction(belief_next,agent,timestep+1)
                             policy.add_subtree(belief_next,subtree)
-                    
+                        else:print("no further viable beliefs")
         policy.data.append(DR.individual[agent])
         policy.data.append(max)
         return policy

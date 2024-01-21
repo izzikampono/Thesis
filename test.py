@@ -10,16 +10,16 @@ import time
 
 # input : file_name , game type  , planning horizon, num iterations,sota(1 or 0)
 # sample : 
-# python test.py dectiger cooperative 3 3 1
+# python test.py problem=dectiger gametype=cooperative horizon=3 iter=3 sota=0
 if len(sys.argv) < 2:
     print("err0r : not enough arguments given")
     sys.exit(1)
 if len(sys.argv)> 5 :
-    file_name = str(sys.argv[1])
-    game_type = str(sys.argv[2])
-    planning_horizon = int(sys.argv[3])
-    num_iterations = int(sys.argv[4])
-    sota_ = bool(int(sys.argv[5]))
+    file_name = str(sys.argv[1]).split("=")[1]
+    game_type = str(sys.argv[2]).split("=")[1]
+    planning_horizon = int(sys.argv[3].split("=")[1])
+    num_iterations = int(sys.argv[4].split("=")[1])
+    sota_ = bool(int(sys.argv[5].split("=")[1]))
 else : 
     print("not enough arguments")
     sys.exit()
