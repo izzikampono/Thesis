@@ -15,7 +15,7 @@ if [ $# -lt 1 ]; then
     echo "Usage: $0 <arg1> [<arg2> ...]"
     exit 1
 fi
-echo "Argument 1: $arg1"
+echo "Argument 1: $1"
 
 source /scratch/s3918343/venvs/thesis/bin/activate
 problem="$1"
