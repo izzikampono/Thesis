@@ -8,21 +8,20 @@ import time
 import os
 import sys
 
-#example run : experiment.py recycling zerosum 3 1 1
+#example run :
+# python experiment.py problem=dectiger horizon=10 iter=10
 
 if len(sys.argv) < 2:
     print("err0r : not enough arguments given")
     sys.exit(1)
 if len(sys.argv)> 5 :
-    file_name = str(sys.argv[1])
-    game_type = str(sys.argv[2])
-    planning_horizon = int(sys.argv[3])
-    num_iterations = int(sys.argv[4])
-    sota_ = bool(int(sys.argv[5]))
+    file_name = str(sys.argv[1]).split("=")[1]
+    planning_horizon = int(sys.argv[3].split("=")[1])
+    num_iterations = int(sys.argv[4].split("=")[1])
+    sota_ = bool(int(sys.argv[5].split("=")[1]))
 else : 
     print("not enough arguments")
     sys.exit()
-
 
 #import problem
 problem = DecPOMDP(file_name, 1,horizon=planning_horizon)
@@ -86,7 +85,7 @@ for game_type in ["cooperative","stackelberg","zerosum"]:
             add_to_database(database,horizon_,game_type,2,time_,num_beliefs,value0,value1,sota_)
 
 database = pd.DataFrame(database)
-file_name = f"/Results/{file_name}_{game_type}_{planning_horizon}_experiment_results.csv"
+file_name = f"{file_name}_{planning_horizon}_experiment_results.csv"
 database.to_csv(file_name, index=False)
 print(f"RESULTS WRITTEN AS : {file_name}:\n")
 
