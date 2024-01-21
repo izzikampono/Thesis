@@ -3,14 +3,15 @@
 # This is a Bash script that dynamically sets Slurm directives and takes an additional argument
 
 # Check if at least two arguments are provided
-if [ $# -lt 2 ]; then
-    echo "Usage: $0 <job_name> <problem>"
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <problem>"
     exit 1
 fi
 
 # Access command-line arguments
 
-problem="$2"
+problem="$1"
+prob = $1
 # Add more variables as needed
 
 # Slurm script filename
@@ -20,7 +21,7 @@ slurm_script="job2.sh"
 cat > "$slurm_script" <<EOL
 #!/bin/bash
 #SBATCH --job-name=python_cpu
-#SBATCH --output=$problem.csv
+#SBATCH --output=$prob.csv
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=2G
 #SBATCH --error=error_file.txt
@@ -46,7 +47,7 @@ EOL
 chmod +x "$slurm_script"
 
 # Submit the Slurm job
-sbatch "$slurm_script" "$2"
+sbatch "$slurm_script"
 
 # Exit the script
 exit 0
