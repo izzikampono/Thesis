@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from decpomdp import DecPOMDP
 import Classes
 from constant import Constants
@@ -73,17 +73,20 @@ def add_to_database(database,horizon,game_type,num_iterations,average_time,num_b
     return
 
 database = initialize_database()
-for sota_ in [True,False]:
-    for horizon in range(1,planning_horizon+1):
-        print(f"\n===== GAME WITH HORIZON {horizon} , SOTA {sota_} =====")
-        game = Classes.PBVI(problem=problem,horizon=horizon,density=0.1,gametype=game_type,sota=sota_)
-        policy, time_ , value_fn = SOLVE(game)
-        num_beliefs = game.belief_space.belief_size()
-        value0,value1= value_fn.get_values_initial_belief()
-        add_to_database(database,horizon,game_type,2,time_,num_beliefs,value0,value1,sota_)
+for game_type in ["cooperative","stackelberg","zerosum"]:
+    for sota_ in [True,False]:
+        for horizon_ in range(1,planning_horizon+1):
+            print(f"\n===== GAME WITH HORIZON {horizon_} , SOTA {sota_} =====")
+            problem = DecPOMDP(file_name,horizon = horizon_, num_players=1)
+            Classes.set_problem(problem)
+            game = Classes.PBVI(problem=problem,horizon=horizon_,density=0.1,gametype=game_type,sota=sota_)
+            policy, time_ , value_fn = SOLVE(game)
+            num_beliefs = game.belief_space.belief_size()
+            value0,value1= value_fn.get_values_initial_belief()
+            add_to_database(database,horizon_,game_type,2,time_,num_beliefs,value0,value1,sota_)
 
 database = pd.DataFrame(database)
-file_name = f"/Results/{file_name}_{game_type}_{horizon}_experiment_results.csv"
+file_name = f"/Results/{file_name}_{game_type}_{planning_horizon}_experiment_results.csv"
 database.to_csv(file_name, index=False)
 print(f"RESULTS WRITTEN AS : {file_name}:\n")
 

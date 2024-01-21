@@ -288,7 +288,7 @@ class PBVI:
            
     def solve(self,iterations,decay):
         self.belief_space.expansion()
-        for _ in range(0,iterations):
+        for _ in range(1,iterations+1):
             print(f"iteration : {_}")
             self.backward_induction()
             self.density /= decay #hyperparameter
@@ -331,7 +331,7 @@ class PBVI:
                         if self.belief_space.distance(belief_next,timestep):
                             subtree = self.tree_extraction(belief_next,agent,timestep+1)
                             policy.add_subtree(belief_next,subtree)
-                        else:print("no further viable beliefs")
+                        # else:print("no further viable beliefs")
         policy.data.append(DR.individual[agent])
         policy.data.append(max)
         return policy
