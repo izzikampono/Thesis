@@ -18,11 +18,11 @@ fi
 echo "Argument 1: $arg1"
 
 source /scratch/s3918343/venvs/thesis/bin/activate
-output_file="$arg1.csv"
-
+problem="$arg1"
+file = "$arg1.csv"
 
 cd /scratch/s3918343/venvs/thesis/Thesis
 
-python experiment.py problem="$arg1" horizon=10 iter=10 > "$output_file"
+python experiment.py problem=$problem" horizon=10 iter=10 > $file
 
 deactivate

@@ -85,7 +85,7 @@ for game_type in ["cooperative","stackelberg","zerosum"]:
             add_to_database(database,horizon_,game_type,2,time_,num_beliefs,value0,value1,sota_)
 
 database = pd.DataFrame(database)
-file_name = f"{file_name}_{planning_horizon}_experiment_results.csv"
+file_name = f"{file_name}_{planning_horizon}.csv"
 database.to_csv(file_name, index=False)
 print(f"RESULTS WRITTEN AS : {file_name}:\n")
 
