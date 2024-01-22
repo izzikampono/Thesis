@@ -14,7 +14,7 @@ module load Python/3.9.6-GCCcore-11.2.0
 
 # Check if at least one argument is provided
 if [ $# -lt 2 ]; then
-    echo "Usage: $0 <problem> [<horizon>]"
+    echo "Usage: $0 <problem> [<horizon>] [num_iter]"
     exit 1
 fi
 
@@ -25,7 +25,7 @@ echo "Argument 1: $1"
 
 cd /scratch/s3918343/venvs/thesis/Thesis
 
-python experiment.py problem=$1 horizon=$2 iter=5
+python experiment.py problem=$1 horizon=$2 iter=$3
 echo "DONE"
 
 deactivate
