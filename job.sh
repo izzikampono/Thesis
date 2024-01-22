@@ -22,10 +22,10 @@ source /scratch/s3918343/venvs/thesis/bin/activate
 pip install -r requirements.txt
 echo "Argument 1: $1"
 
-problem="$1"
 
 cd /scratch/s3918343/venvs/thesis/Thesis
 
 python experiment.py problem=$1 horizon=10 iter=10
+echo "DONE"
 
 deactivate
