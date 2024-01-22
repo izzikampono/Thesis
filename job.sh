@@ -4,7 +4,7 @@
 #SBATCH --ntasks=10
 #SBATCH --error=error_file_jobsh.txt
 #SBATCH --job-name=python_cpu
-#SBATCH --mem=10G
+#SBATCH --mem=20G
 #SBATCH --output=output.log
 
 # module purge
