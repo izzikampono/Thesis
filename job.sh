@@ -10,7 +10,7 @@
 
 module purge
 module load Python/3.9.6-GCCcore-11.2.0
-
+pip install cplex
 
 # Check if at least one argument is provided
 if [ $# -lt 3 ]; then
