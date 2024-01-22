@@ -6,6 +6,7 @@ import warnings
 from decpomdp import DecPOMDP
 import matplotlib.pyplot as plt
 from docplex.mp.model import Model
+import cplex
 import sys
 import subprocess
 from constant import Constants
