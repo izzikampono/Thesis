@@ -3,7 +3,6 @@
 #SBATCH --mem=2G
 #SBATCH --time=00:10:00
 #SBATCH --ntasks=10
-#SBATCH --output= "$1".csv
 #SBATCH --error=error_file_jobsh.txt
 #SBATCH --job-name=python_cpu
 #SBATCH --mem=8000
