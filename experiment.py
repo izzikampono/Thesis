@@ -7,6 +7,9 @@ from constant import Constants
 import time
 import os
 import sys
+import gc
+
+gc.enable()
 
 #example run :
 # python experiment.py problem=dectiger horizon=10 iter=10
@@ -30,7 +33,7 @@ Classes.set_problem(problem)
 # solve
 def SOLVE(game):
     start_time = time.time()
-    policy = game.solve(3,0.9)
+    policy = game.solve(num_iterations,0.9)
     end_time = time.time()
     solve_time = end_time - start_time
     value_fn = game.value_function

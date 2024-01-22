@@ -2,13 +2,13 @@
 #SBATCH --nodes=2
 #SBATCH --cpus-per-task=2
 #SBATCH --time=00:10:00
-#SBATCH --ntasks=10
+#SBATCH --ntasks=2
 #SBATCH --error=error_file_jobsh.txt
 #SBATCH --job-name=python_cpu
-#SBATCH --mem=80G
+#SBATCH --mem=40G
 #SBATCH --output=output.log
 
-# module purge
+module purge
 module load Python/3.9.6-GCCcore-11.2.0
 
 
