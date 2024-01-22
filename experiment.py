@@ -14,11 +14,10 @@ import sys
 if len(sys.argv) < 2:
     print("err0r : not enough arguments given")
     sys.exit(1)
-if len(sys.argv)> 5 :
+if len(sys.argv)> 3 :
     file_name = str(sys.argv[1]).split("=")[1]
-    planning_horizon = int(sys.argv[3].split("=")[1])
-    num_iterations = int(sys.argv[4].split("=")[1])
-    sota_ = bool(int(sys.argv[5].split("=")[1]))
+    planning_horizon = int(sys.argv[2].split("=")[1])
+    num_iterations = int(sys.argv[3].split("=")[1])
 else : 
     print("not enough arguments")
     sys.exit()
@@ -27,12 +26,6 @@ else :
 problem = DecPOMDP(file_name, 1,horizon=planning_horizon)
 Classes.set_problem(problem)
 
-print("GAME INITIATED :")
-print(f"game of type {game_type} initiated with SOTA set to = {sota_} with horizon {planning_horizon}")
-print(f"game size :\n\t|S| = {len(problem.states)}")
-print(f"\t|Z| = {problem.num_joint_observations}\n\t|U| = {problem.num_joint_actions} with |U_i| = {problem.num_actions[0]}")
-print(f"intiial_belief : {problem.b0}")
-print("\n\n\n")
 
 # solve
 def SOLVE(game):
@@ -75,7 +68,7 @@ database = initialize_database()
 for game_type in ["cooperative","stackelberg","zerosum"]:
     for sota_ in [True,False]:
         for horizon_ in range(1,planning_horizon+1):
-            print(f"\n===== GAME WITH HORIZON {horizon_} , SOTA {sota_} =====")
+            print(f"\n===== GAME of type {game_type} WITH HORIZON {horizon_} , SOTA {sota_} =====")
             problem = DecPOMDP(file_name,horizon = horizon_, num_players=1)
             Classes.set_problem(problem)
             game = Classes.PBVI(problem=problem,horizon=horizon_,density=0.1,gametype=game_type,sota=sota_)
