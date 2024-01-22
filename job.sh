@@ -15,13 +15,15 @@ if [ $# -lt 1 ]; then
     echo "Usage: $0 <arg1> [<arg2> ...]"
     exit 1
 fi
-echo "Argument 1: $1"
 
 source /scratch/s3918343/venvs/thesis/bin/activate
+pip install -r requirements.txt
+echo "Argument 1: $1"
+
 problem="$1"
 
 cd /scratch/s3918343/venvs/thesis/Thesis
 
-python experiment.py problem=$problem horizon=10 iter=10
+python experiment.py problem=$1 horizon=10 iter=10
 
 deactivate
