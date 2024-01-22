@@ -4,6 +4,7 @@
 #SBATCH --time=00:10:00
 #SBATCH --ntasks=10
 #SBATCH --output= "$1".csv
+#SBATCH --error=error_file_jobsh.txt
 #SBATCH --job-name=python_cpu
 #SBATCH --mem=8000
 module purge
@@ -22,6 +23,6 @@ problem="$1"
 
 cd /scratch/s3918343/venvs/thesis/Thesis
 
-python experiment.py problem=$1 horizon=10 iter=10
+python experiment.py problem=$problem horizon=10 iter=10
 
 deactivate
