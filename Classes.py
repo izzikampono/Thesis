@@ -4,6 +4,8 @@ from decpomdp import DecPOMDP
 from constant import Constants
 from utilities import *
 import random
+import gc
+gc.enable()
 
 CONSTANT = None
 utilities = None
