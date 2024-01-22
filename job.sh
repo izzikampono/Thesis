@@ -6,7 +6,7 @@
 #SBATCH --error=error_file_jobsh.txt
 #SBATCH --job-name=python_cpu
 #SBATCH --mem=8000
-module purge
+# module purge
 module load Python/3.9.6-GCCcore-11.2.0
 
 
