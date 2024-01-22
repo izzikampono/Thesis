@@ -22,6 +22,6 @@ problem="$1"
 
 cd /scratch/s3918343/venvs/thesis/Thesis
 
-python experiment.py problem="$1" horizon=10 iter=10
+python experiment.py problem=$1 horizon=10 iter=10
 
 deactivate
