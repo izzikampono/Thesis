@@ -25,7 +25,7 @@ echo "Argument 1: $1"
 
 cd /scratch/s3918343/venvs/thesis/Thesis
 
-python experiment.py problem=$1 horizon=10 iter=10
+python experiment.py problem=$1 horizon=5 iter=5
 echo "DONE"
 
 deactivate
