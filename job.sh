@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --nodes=2
-#SBATCH --cpus-per-task=2
+#SBATCH --cpus-per-task=4
 #SBATCH --time=00:10:00
 #SBATCH --ntasks=2
 #SBATCH --error=error_file_jobsh.txt
@@ -10,7 +10,6 @@
 
 module purge
 module load Python/3.9.6-GCCcore-11.2.0
-pip install cplex
 
 # Check if at least one argument is provided
 if [ $# -lt 3 ]; then
