@@ -2,10 +2,9 @@
 #SBATCH --nodes=2
 #SBATCH --cpus-per-task=4
 #SBATCH --time=00:10:00
-#SBATCH --ntasks=4
 #SBATCH --error=error_file_jobsh.txt
 #SBATCH --job-name=python_cpu_$1
-#SBATCH --mem=40G
+#SBATCH --mem=10G
 #SBATCH --output=output.log
 
 module purge

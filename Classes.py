@@ -211,7 +211,7 @@ class ValueFunction:
 
     def backup(self,belief,timestep,gametype):
         beta = self.create_beta_vector(belief,timestep,gametype)
-        print(f"Beta at timestep {timestep}\nLeader:\n{beta.two_d_vectors[0]}\nFollower:\n{beta.two_d_vectors[1]}")
+        # print(f"Beta at timestep {timestep}\nLeader:\n{beta.two_d_vectors[0]}\nFollower:\n{beta.two_d_vectors[1]}")
         value , alpha = beta.solve(belief,gametype,self.sota)
         self.add_alpha_vector(alpha,timestep)
 
@@ -298,7 +298,6 @@ class PBVI:
                         if self.belief_space.distance(belief_next,timestep):
                             subtree = self.tree_extraction(belief_next,agent,timestep+1)
                             policy.add_subtree(belief_next,subtree)
-                        # else:print("no further viable beliefs")
         policy.data.append(DR.individual[agent])
         policy.data.append(max)
         return policy
@@ -355,7 +354,6 @@ class BeliefSpace:
                         belief = previous_belief.next_belief(joint_action,joint_observation)
                         if self.distance(belief,timestep):
                             self.belief_states[timestep].append(belief)
-                            # print(f"belief point added at timestep {timestep}: {belief}")
         print("\tbelief expansion done")  
     
          
@@ -376,7 +374,6 @@ class Belief:
 
 
         if type(joint_DR) == int: # if joint_DR enterred as a deterministic action 
-            # print(f"{CONSTANT.TRANSITION_FUNCTION} and {CONSTANT.OBSERVATION_FUNCTION}")
             for next_state in CONSTANT.STATES:
                 value = 0
                 for state in CONSTANT.STATES:
