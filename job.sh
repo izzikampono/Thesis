@@ -17,11 +17,15 @@ if [ $# -lt 3 ]; then
     exit 1
 fi
 source /scratch/s3918343/venvs/thesis/bin/activate
+echo : "initialized python evironment"
 module load CPLEX/22.1.1-GCCcore-11.2.0
+cplex -c set parallel -1
+cplex quit
+echo : "Loaded Cplex and set to parallel computing"
 pip install --upgrade pip
 pip install --upgrade wheel
 pip install -r requirements.txt
-echo "problem : $1 , horizon: $2, iter : $3"
+echo "Run problem : $1 with horizon: $2 and iter : $3"
 
 
 cd /scratch/s3918343/venvs/thesis/Thesis
