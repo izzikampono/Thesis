@@ -219,6 +219,8 @@ class PBVI:
         self.horizon = horizon
         self.density = density
 
+        self.leader_experiment_values = []
+        self.follower_experiment_values = []
 
 
     def backward_induction(self):
@@ -235,13 +237,26 @@ class PBVI:
             print(f"iteration : {_}")
             self.backward_induction()
             self.density /= decay #hyperparameter
+            leader_value , follower_value = self.value_function.get_values_initial_belief()
         initial_belief = self.belief_space.get_inital_belief()
         self.policies[0] = self.tree_extraction(initial_belief,agent=0,timestep = 0)    
         self.policies[1] = self.tree_extraction(initial_belief,agent=1,timestep =0)  
-        return self.policies   
+        return self.policies 
+      
+    def iteration(self,iterations,decay):
+        print(f"iteration : {_}")
+        self.backward_induction()
+        self.density /= decay #hyperparameter
+        leader_value , follower_value = self.value_function.get_values_initial_belief()
+        self.leader_experiment_values.append(np.average(leader_value))
+        self.follower_experiment_values.append(np.average(follower_value))
+        initial_belief = self.belief_space.get_inital_belief()
+        self.policies[0] = self.tree_extraction(initial_belief,agent=0,timestep = 0)    
+        self.policies[1] = self.tree_extraction(initial_belief,agent=1,timestep =0)  
+        return self.leader_experiment_values,self.follower_experiment_values,self.policies 
+     
     def tree_extraction(self,belief, agent,timestep):
         global utilities
-
         # edge case at last horizon
         if timestep > self.horizon : return PolicyTree(None)
 
