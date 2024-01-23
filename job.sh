@@ -4,7 +4,7 @@
 #SBATCH --time=00:10:00
 #SBATCH --ntasks=2
 #SBATCH --error=error_file_jobsh.txt
-#SBATCH --job-name=python_cpu
+#SBATCH --job-name=python_cpu_$1
 #SBATCH --mem=40G
 #SBATCH --output=output.log
 
@@ -28,6 +28,6 @@ echo "problem : $1 , horizon: $2, iter : $3"
 cd /scratch/s3918343/venvs/thesis/Thesis
 
 python experiment.py problem=$1 horizon=$2 iter=$3
-echo "DONE"
+echo " SOLVING DONE"
 
 deactivate
