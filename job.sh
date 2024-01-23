@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --nodes=2
 #SBATCH --cpus-per-task=10
-#SBATCH --time=00:20:00
+#SBATCH --time=00:10:00
 #SBATCH --error=error_file_jobsh.txt
 #SBATCH --job-name=$1
-#SBATCH --mem=20G
+#SBATCH --mem=5G
 #SBATCH --output=output.log
 
 module purge
@@ -18,6 +18,7 @@ if [ $# -lt 3 ]; then
 fi
 source /scratch/s3918343/venvs/thesis/bin/activate
 echo : "initialized python evironment"
+module load SciPy-bundle/2022.05-foss-2022a
 module load CPLEX/22.1.1-GCCcore-11.2.0
 cplex -c set parallel -1
 cplex quit

@@ -1,6 +1,5 @@
 from docplex.cp.config import context
-context.params.threads = 1
-context.params.workers = 5
+context.params.threads = 0
 context.verbose = 0
 context.model.add_source_location = False
 context.model.length_for_alias = 10
