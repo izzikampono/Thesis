@@ -3,7 +3,7 @@ import pandas as pd
 import random
 from decpomdp import DecPOMDP
 import matplotlib.pyplot as plt
-from docplex.mp.model import Model
+from docplex.cp.model import Model
 import sys
 
 
@@ -164,7 +164,6 @@ def Q(bt,t,u,V_table,gametype,player):
 
 
 
-from docplex.mp.model import Model
 def LP(Q1,Q2):
  
     milp = Model("tiger problem")

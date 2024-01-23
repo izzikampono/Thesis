@@ -18,16 +18,13 @@ if [ $# -lt 3 ]; then
 fi
 source /scratch/s3918343/venvs/thesis/bin/activate
 echo : "initialized python evironment"
-module load SciPy-bundle/2022.05-foss-2022a
 module load CPLEX/22.1.1-GCCcore-11.2.0
 cplex -c set parallel -1
 cplex quit
 cplex -c set threads 0
 cplex quit
 echo : "\n\n\n Loaded Cplex and set to parallel computing \n\n\n"
-pip install --upgrade pip
-pip install --upgrade wheel
-pip install -r requirements.txt
+
 echo "Run problem : $1 with horizon: $2 and iter : $3"
 
 
