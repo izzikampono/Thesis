@@ -47,9 +47,8 @@ def initialize_database():
                     "number_of_beliefs" : [],
                     "leader_value_b0":[],
                     "follower_value_b0":[],
-                    "density" = [],
-                    "gap":[]
-                   
+                    "density" : [],
+                    "gap":[],
                     }
     return database
 
