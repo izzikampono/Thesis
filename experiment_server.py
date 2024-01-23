@@ -10,7 +10,7 @@ import gc
 gc.enable()
 
 #example run :
-# python experiment.py problem=dectiger horizon=10 iter=10
+# python experiment_server.py problem=dectiger horizon=5 iter=1
 
 if len(sys.argv) < 2:
     print("err0r : not enough arguments given")
@@ -81,7 +81,7 @@ for game_type in ["cooperative","stackelberg","zerosum"]:
 print("Calculations done... exporting to csv....")
 database = pd.DataFrame(database)
 file_name = f"{file_name}_{planning_horizon}.csv"
-path = "/server_results/"
+path = "server_results/"
 database.to_csv(path+file_name, index=False)
 print(f"RESULTS WRITTEN AS : {file_name}:\n")
 
