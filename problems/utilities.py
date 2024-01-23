@@ -3,10 +3,8 @@ import pandas as pd
 import random
 from decpomdp import DecPOMDP
 import matplotlib.pyplot as plt
-from docplex.cp.config import context
 from docplex.mp.model import Model
-from docplex.mp.context import Context as C
-from docplex.cp.model import Model
+from docplex.cp.config import context
 import sys
 
 
