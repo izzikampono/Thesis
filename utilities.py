@@ -193,7 +193,7 @@ class Utilities:
 
     def zerosum_lp_leader(self,payoff):
         "linear program for SOTA of zerosum game"
-        milp = Model("tiger problem")
+        milp = Model("{self.PROBLEM.name} LEADER SOTA problem")
 
         #initialize linear program variables
         DR = []
@@ -238,18 +238,18 @@ class Utilities:
         DR = []
         V = []
         for action in self.ACTIONS[1]:
-            DR.append(milp.continuous_var(name=f"a{1}_{action}",ub=1,lb=0))
+            DR.append(milp.binary_var(name=f"a{1}_{action}"))
         V = milp.continuous_var(name="V",ub=float('inf'),lb=float('-inf'))
 
         # define objective function 
         milp.minimize(V)
 
         # define constraints 
-        for opponent_action in self.ACTIONS[0]:    
+        for leader_action in self.ACTIONS[0]:    
             rhs = 0   
 
             for agent_action, agent_action_probability in enumerate(DR):
-                rhs += payoff[self.PROBLEM.get_joint_action(opponent_action,agent_action)] * agent_action_probability
+                rhs += payoff[self.PROBLEM.get_joint_action(leader_action,agent_action)] * agent_action_probability
             
             milp.add_constraint(V>=rhs)
 

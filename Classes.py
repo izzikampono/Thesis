@@ -38,6 +38,13 @@ class AlphaVector:
     def set_value(self,agent,hidden_state,value):
         self.vectors[agent][hidden_state] = value
 
+    def get_beta_future_value(self,agent,joint_action,joint_observation):
+        value = np.zeros(len(CONSTANT.STATES))
+        for state in CONSTANT.STATES:
+            for next_state in CONSTANT.STATES:
+                value[state] += CONSTANT.TRANSITION_FUNCTION[joint_action][state][next_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][state][joint_observation]* self.vectors[agent][next_state]
+        return value
+
     def get_beta_two_d_vector(self,game_type):
         global REWARDS
         two_d_vectors = {}
@@ -46,8 +53,8 @@ class AlphaVector:
             reward = CONSTANT.REWARDS[game_type][agent]
             two_d_vectors[agent] = np.zeros((len(CONSTANT.JOINT_ACTIONS),(len(CONSTANT.STATES))))
             # To improve efficiency in the cases of zerosum and cooperative games, we only need the first player payoffs, so we can skip the second player payoffs and provide the same for both players.  
-            if game_type!="stackelberg" and agent==1 and self.sota==True :
-                two_d_vectors[agent]=two_d_vectors[0]
+            if game_type!="stackelberg" and agent==CONSTANT.FOLLOWER and self.sota==True :
+                two_d_vectors[agent]=two_d_vectors[CONSTANT.LEADER]
                 return BetaVector(two_d_vectors[0],two_d_vectors[1])
                 
             for hidden_state in CONSTANT.STATES:
@@ -62,30 +69,15 @@ class AlphaVector:
                             two_d_vectors[agent][joint_action][hidden_state]+= CONSTANT.TRANSITION_FUNCTION[joint_action][hidden_state][next_hidden_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][hidden_state][joint_observation]* self.vectors[agent][next_hidden_state]
                     
         # note : u can filter the zero probabilites out of the vector to reduce computational 
-
-        return BetaVector(two_d_vectors[0],two_d_vectors[1])
-    def payoff_function(self,belief,game_type):
-
-        beta = self.get_beta_two_d_vector(game_type)
-
-
-        payoffs = {}
-        for agent in range(0,2):
-            payoffs[agent] = np.zeros(len(CONSTANT.JOINT_ACTIONS))
-            for joint_action in CONSTANT.JOINT_ACTIONS:
-                for hidden_state in CONSTANT.STATES:
-                    payoffs[agent][joint_action] += belief.value[hidden_state] * beta.two_d_vectors[agent][joint_action][hidden_state]
-        return payoffs,beta
+    # def payoff_function(self,belief,game_type,beta):
+    #     payoffs = {}
+    #     for agent in range(0,2):
+    #         payoffs[agent] = np.zeros(len(CONSTANT.JOINT_ACTIONS))
+    #         for joint_action in CONSTANT.JOINT_ACTIONS:
+    #             for state in CONSTANT.STATES:
+    #                 payoffs[agent][joint_action] += belief.value[state] * beta.two_d_vectors[agent][joint_action][state]
+    #     return payoffs,beta
     
-
-    def solve(self,belief,game_type):
-        payoffs ,beta = self.payoff_function(belief,game_type)
-        if self.sota==False :
-            value , DR , DR0 , DR1 = utilities.LP(payoffs[0],payoffs[1])
-        else:
-            value, DR, DR0, DR1 = utilities.sota_strategy(payoffs[0],payoffs[1],game_type)
-        alpha = beta.get_alpha_vector2(DecisionRule(DR0,DR1,DR),belief,sota2=self.sota)
-        return value, alpha
 
     
     
@@ -105,43 +97,34 @@ class BetaVector:
     def get_alpha_vector(self,DR,sota2=False):
 
         vectors = np.zeros((2,len(CONSTANT.STATES)))
-        for x in CONSTANT.STATES:
-            vectors[0][x] = 0
-            vectors[1][x] = 0
-            for u in CONSTANT.JOINT_ACTIONS:
-                joint_action_probability = DR.joint[u]
-                vectors[0][x] += joint_action_probability * self.two_d_vectors[0][x][u]
-                vectors[1][x] += joint_action_probability * self.two_d_vectors[1][x][u]
+        for state in CONSTANT.STATES:
+            for joint_action in CONSTANT.JOINT_ACTIONS:
+                joint_action_probability = DR.joint[joint_action]
+                vectors[CONSTANT.LEADER][state] += joint_action_probability * self.two_d_vectors[CONSTANT.LEADER][joint_action][state]
+                vectors[CONSTANT.FOLLOWER][state] += joint_action_probability * self.two_d_vectors[CONSTANT.FOLLOWER][joint_action][state]
 
         return AlphaVector(DR,vectors[0],vectors[1],sota=sota2)
     
-    def get_alpha_vector2(self,DR,belief,sota2=False):
+        
+    def payoff_function(self,belief):
 
-        vectors = np.zeros((2,len(CONSTANT.STATES)))
-
-        for agent in range(2):
-            max = -np.inf
+        payoffs = {}
+        for agent in range(0,2):
+            payoffs[agent] = np.zeros(len(CONSTANT.JOINT_ACTIONS))
             for joint_action in CONSTANT.JOINT_ACTIONS:
-                value=0
                 for state in CONSTANT.STATES:
-                    value += belief.value[state] * self.two_d_vectors[agent][joint_action][state]
-                if value> max :
-                    argmax = self.two_d_vectors[agent][joint_action]
-                    max = value
-            vectors[agent] = argmax
-        
-        alpha_vector = np.zeros((2,len(CONSTANT.STATES)))
-        for agent in range(2):
-            for u in CONSTANT.JOINT_ACTIONS:
-                joint_action_probability = DR.joint[u]
-                for x in CONSTANT.STATES:
-                    alpha_vector[agent][x] += joint_action_probability * vectors[agent][x]
-
-
-        
-        return AlphaVector(DR,alpha_vector[0],alpha_vector[1],sota=sota2)
-
-
+                    payoffs[agent][joint_action] += belief.value[state] * self.two_d_vectors[agent][joint_action][state]
+        return payoffs
+    
+    def solve(self,belief,game_type,sota):
+        payoffs = self.payoff_function(belief)
+        if sota==False :
+            value , DR , DR0 , DR1 = utilities.LP(payoffs[0],payoffs[1])
+        else:
+            value, DR, DR0, DR1 = utilities.sota_strategy(payoffs[0],payoffs[1],game_type)
+        alpha = self.get_alpha_vector(DecisionRule(DR0,DR1,DR),sota)
+        return value, alpha
+    
         
     def print_vector(self):
         print(self.two_d_vectors)
@@ -172,11 +155,11 @@ class PolicyTree:
 ################################################################################################
             
 class ValueFunction:
-    def __init__(self,horizon, initial_belief,sota=False):
+    def __init__(self,horizon, belief_space,sota=False):
         self.horizon = horizon
         self.vector_sets = {}
         self.sota=sota
-        self.initial_belief = Belief(np.array(initial_belief),None,None)
+        self.beliefs = belief_space
         for timestep in range(horizon+2):
             self.vector_sets[timestep] = []
         vector = np.zeros(len(CONSTANT.STATES))
@@ -188,77 +171,58 @@ class ValueFunction:
     def pruning(self,timestep):
         self.vector_sets[timestep] = set(self.vector_sets[timestep])
     
-    def get_alpha_vector(self, belief,timestep):
+    def get_max_alpha_vector(self, belief,timestep):
         max = -np.inf
-        max_alpha = 0
+        max_alpha = None
         for alpha in self.vector_sets[timestep]:
-            value = alpha.get_value(belief)
-            if value>max:
-                max = value
+            leader_value,follower_value = alpha.get_value(belief)
+            # print(f"alpha vector value at timestep {timestep} t : {value}")
+            if leader_value>max:
+                max = leader_value
                 max_alpha = alpha
         return max,max_alpha
     
+    def create_beta_vector(self,belief,timestep,gametype):
+        two_d_vectors = {}
+        for agent in range(0,2):
+        #get reward matrix for agent
+            reward = CONSTANT.REWARDS[gametype][agent]
+
+            #initialize beta vector space (by action space first)
+            two_d_vectors[agent] = np.zeros((len(CONSTANT.JOINT_ACTIONS),len(CONSTANT.STATES)))
+
+            # To improve efficiency in the cases of zerosum and cooperative games, we only need the first player payoffs, so we can skip the second player payoffs and provide the same for both players.  
+            if gametype!="stackelberg" and agent==CONSTANT.FOLLOWER and self.sota==True :
+                two_d_vectors[agent]=two_d_vectors[0]
+                return BetaVector(two_d_vectors[0],two_d_vectors[1])
+                
+            for joint_action in CONSTANT.JOINT_ACTIONS:
+                two_d_vectors[agent][joint_action] += reward[joint_action]
+                # if statement for blind agents
+                if gametype=="stackelberg" and agent==CONSTANT.FOLLOWER and self.sota==True:
+                    continue
+                for joint_observation in CONSTANT.JOINT_OBSERVATIONS:                        
+                    next_belief = belief.next_belief(joint_action,joint_observation)
+                    _, max_alpha = self.get_max_alpha_vector(next_belief,timestep+1)
+                    two_d_vectors[agent][joint_action] += max_alpha.get_beta_future_value(agent,joint_action,joint_observation)
+
+        return BetaVector(two_d_vectors[0],two_d_vectors[1])
+    
+
     def backup(self,belief,timestep,gametype):
-        max = -np.inf
-        max_alpha = None
+        beta = self.create_beta_vector(belief,timestep,gametype)
+        print(f"Beta at timestep {timestep}\nLeader:\n{beta.two_d_vectors[0]}\nFollower:\n{beta.two_d_vectors[1]}")
+        value , alpha = beta.solve(belief,gametype,self.sota)
+        self.add_alpha_vector(alpha,timestep)
 
-        for alpha in self.vector_sets[timestep+1]:
-            
-            value , _alpha = alpha.solve(belief,gametype)
-            if type(alpha) != AlphaVector or type(_alpha) != AlphaVector or alpha.sota!=self.sota:
-                print("ERROR ALPHA VECTOR MISMATCH")
-            if value>max:
-                max = value
-                max_alpha = _alpha
-        if max_alpha == None:
-            print(f"time : {timestep}")
-            print(f"max_alpha = {max_alpha}")
-            print(f"size : {len(self.vector_sets[timestep+1])}")
-            return
-        self.add_alpha_vector(max_alpha,timestep)
+                       
+        # note : u can filter the zero probabilites out of the vector to reduce computational 
 
-        
-    
-    # def tree_extraction(self,belief, agent,timestep):
-    #     global utilities
-    #     # edge case at last horizon
-    #     if timestep > self.horizon : return PolicyTree(None)
-
-    #     #initialize policy and DR_bt
-    #     policy = PolicyTree(None)
-    #     DR = DecisionRule(None,None,None)
-
-    #     max = -np.inf
-
-    #     # extract decision rule of agent from value function at current belief
-    #     for alpha in self.vector_sets[timestep]:
-    #         value = alpha.get_value(belief)
-    #         if (max<value[agent]) :
-    #             max = value[agent]
-    #             DR = alpha.DR
-    #     print(f"max value at timestep {timestep} = {max}")
-    #     for u_agent in CONSTANT.ACTIONS[agent]:
-    #         #if probability of action is not 0
-    #         if DR.individual[agent][u_agent] > 0:
-
-    #             #get actions of the other agent
-    #             for u_not_agent in CONSTANT.ACTIONS[int(not agent)]:
-
-    #                 joint_action = CONSTANT.PROBLEM.get_joint_action(u_agent,u_not_agent)
-    #                 for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-    #                     belief_next = belief.next_belief(joint_action,joint_observation)
-    #                     subtree = self.tree_extraction(belief_next,agent,timestep+1)
-    #                     policy.add_subtree(belief_next,subtree)
-    #     policy.data.append(DR.individual[agent])
-    #     policy.data.append(max)
-    #     return policy
-    
-   
     
     def get_values_initial_belief(self):
         values_leader,values_follower = [],[]
         for alpha in self.vector_sets[0]:
-            value_leader,value_follower = alpha.get_value(self.initial_belief)
+            value_leader,value_follower = alpha.get_value(self.beliefs.initial_belief)
             values_leader.append(value_leader)
             values_follower.append(value_follower)
         return values_leader,values_follower
@@ -270,8 +234,9 @@ class ValueFunction:
 class PBVI:
     def __init__(self,problem,horizon,density,gametype,sota=False):
         self.sota = sota
-        self.value_function = ValueFunction(horizon,problem.b0,sota=self.sota)
         self.belief_space = BeliefSpace(horizon,problem.b0,density)
+        self.value_function = ValueFunction(horizon,self.belief_space,sota=self.sota)
+
         self.policies = [PolicyTree(None),PolicyTree(None)]
         self.gametype = gametype
         self.problem = problem
@@ -344,9 +309,10 @@ class BeliefSpace:
     def __init__(self,horizon,initial_belief,density):
         self.density = density
         self.belief_states = {} 
+        self.initial_belief=Belief(initial_belief,None,None)
         for timestep in range(horizon+1):
             self.belief_states[timestep] = []
-        self.belief_states[0].append(Belief(initial_belief,None,None))
+        self.belief_states[0].append(self.initial_belief)
         self.horizon = horizon
     def get_inital_belief(self):
         return self.belief_states[0][0]
