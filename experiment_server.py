@@ -26,6 +26,7 @@ else :
 #import problem
 problem = DecPOMDP(file_name, 1,horizon=planning_horizon)
 Classes.set_problem(problem)
+density = 0.1
 
 
 # solve
@@ -45,9 +46,9 @@ def initialize_database():
                     "average_time" : [],
                     "number_of_beliefs" : [],
                     "leader_value_b0":[],
-                    "follower_value_b0":[]
+                    "follower_value_b0":[],
                     # "density" = []
-                    # "gap":[]
+                    "gap":[]
                    
                     }
     return database
@@ -61,8 +62,9 @@ def add_to_database(database,horizon,game_type,num_iterations,average_time,num_b
     database["number_of_beliefs"].append(num_beliefs)
     database["leader_value_b0"].append(V0_B0)
     database["follower_value_b0"].append(V1_B0)
+    database["gap"].append(np.abs(V1_B0-V0_B0))
     # database["gap"].append(abs(V0_B0-V1_B0))
-    # database["density"].append(density)
+    database["density"].append(density)
     return
 
 database = initialize_database()
@@ -72,7 +74,7 @@ for game_type in ["cooperative","stackelberg","zerosum"]:
             print(f"\n===== GAME of type {game_type} WITH HORIZON {horizon_} , SOTA {sota_} =====")
             problem = DecPOMDP(file_name,horizon = horizon_, num_players=1)
             Classes.set_problem(problem)
-            game = Classes.PBVI(problem=problem,horizon=horizon_,density=0.1,gametype=game_type,sota=sota_)
+            game = Classes.PBVI(problem=problem,horizon=horizon_,density=density,gametype=game_type,sota=sota_)
             policy, time_ , value_fn = SOLVE(game)
             num_beliefs = game.belief_space.belief_size()
             value0,value1= value_fn.get_values_initial_belief()
@@ -80,7 +82,8 @@ for game_type in ["cooperative","stackelberg","zerosum"]:
 print("Calculations done... exporting to csv....")
 database = pd.DataFrame(database)
 file_name = f"{file_name}_{planning_horizon}.csv"
-database.to_csv(file_name, index=False)
+path = "/server_results/"
+database.to_csv(path+file_name, index=False)
 print(f"RESULTS WRITTEN AS : {file_name}:\n")
 
 
