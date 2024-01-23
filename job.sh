@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=80
+#SBATCH --cpus-per-task=50
 #SBATCH --time=00:15:00
 #SBATCH --error=error_file_jobsh.txt
 #SBATCH --job-name=$1
