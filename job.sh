@@ -1,9 +1,10 @@
 #!/bin/bash
-#SBATCH --nodes=2
-#SBATCH --cpus-per-task=10
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=20
 #SBATCH --time=00:10:00
 #SBATCH --error=error_file_jobsh.txt
 #SBATCH --job-name=$1
+#SBATCH --gres=gpu:1
 #SBATCH --mem=5G
 #SBATCH --output=output.log
 
