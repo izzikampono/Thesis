@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --time=00:10:00
 #SBATCH --error=error_file_jobsh.txt
-#SBATCH --job-name=python_cpu_$1
+#SBATCH --job-name=$1
 #SBATCH --mem=10G
 #SBATCH --output=output.log
 
