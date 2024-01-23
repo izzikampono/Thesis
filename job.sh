@@ -20,7 +20,8 @@ source /scratch/s3918343/venvs/thesis/bin/activate
 echo : "initialized python evironment"
 module load CPLEX/22.1.1-GCCcore-11.2.0
 cplex -c set parallel -1
-cplex set threads 1
+cplex quit
+cplex -c set threads 1
 cplex quit
 echo : "\n\n\n Loaded Cplex and set to parallel computing \n\n\n"
 pip install --upgrade pip
