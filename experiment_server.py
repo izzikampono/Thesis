@@ -53,7 +53,7 @@ def initialize_database():
                     }
     return database
 
-def add_to_database(database,horizon,game_type,num_iterations,average_time,num_beliefs,V0_B0,V1_B0,SOTA):
+def add_to_database(database,horizon,game_type,num_iterations,average_time,num_beliefs,V0_B0,V1_B0,SOTA,density):
     database["gametype"].append(game_type)
     database["horizon"].append(horizon)
     database["SOTA"].append(SOTA)
@@ -78,7 +78,7 @@ for game_type in ["cooperative","stackelberg","zerosum"]:
             policy, time_ , value_fn = SOLVE(game)
             num_beliefs = game.belief_space.belief_size()
             value0,value1= value_fn.get_values_initial_belief()
-            add_to_database(database,horizon_,game_type,2,time_,num_beliefs,np.average(value0),np.average(value1),sota_)
+            add_to_database(database,horizon_,game_type,2,time_,num_beliefs,np.average(value0),np.average(value1),sota_,density)
 print("Calculations done... exporting to csv....")
 database = pd.DataFrame(database)
 file_name = f"{file_name}_{planning_horizon}.csv"
