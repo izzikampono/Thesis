@@ -10,6 +10,8 @@ import cplex
 import sys
 import subprocess
 from constant import Constants
+import gc
+gc.enable()
 
 class Utilities:
     def __init__(self,constant:Constants) :

@@ -44,30 +44,7 @@ class AlphaVector:
             for next_state in CONSTANT.STATES:
                 value[state] += CONSTANT.TRANSITION_FUNCTION[joint_action][state][next_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][state][joint_observation]* self.vectors[agent][next_state]
         return value
-
-    def get_beta_two_d_vector(self,game_type):
-        global REWARDS
-        two_d_vectors = {}
-
-        for agent in range(0,2):
-            reward = CONSTANT.REWARDS[game_type][agent]
-            two_d_vectors[agent] = np.zeros((len(CONSTANT.JOINT_ACTIONS),(len(CONSTANT.STATES))))
-            # To improve efficiency in the cases of zerosum and cooperative games, we only need the first player payoffs, so we can skip the second player payoffs and provide the same for both players.  
-            if game_type!="stackelberg" and agent==CONSTANT.FOLLOWER and self.sota==True :
-                two_d_vectors[agent]=two_d_vectors[CONSTANT.LEADER]
-                return BetaVector(two_d_vectors[0],two_d_vectors[1])
-                
-            for hidden_state in CONSTANT.STATES:
-                for joint_action in CONSTANT.JOINT_ACTIONS:
-                    two_d_vectors[agent][joint_action][hidden_state] = reward[joint_action][hidden_state]
-                    
-                    if game_type == "stackelberg"  and agent==1 and self.sota==True : 
-                        continue #for the blind strategy of the stackelberg games
-                    
-                    for next_hidden_state in CONSTANT.STATES:
-                        for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                            two_d_vectors[agent][joint_action][hidden_state]+= CONSTANT.TRANSITION_FUNCTION[joint_action][hidden_state][next_hidden_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][hidden_state][joint_observation]* self.vectors[agent][next_hidden_state]
-                    
+            
         # note : u can filter the zero probabilites out of the vector to reduce computational 
     # def payoff_function(self,belief,game_type,beta):
     #     payoffs = {}
@@ -97,11 +74,10 @@ class BetaVector:
     def get_alpha_vector(self,DR,sota2=False):
 
         vectors = np.zeros((2,len(CONSTANT.STATES)))
-        for state in CONSTANT.STATES:
-            for joint_action in CONSTANT.JOINT_ACTIONS:
-                joint_action_probability = DR.joint[joint_action]
-                vectors[CONSTANT.LEADER][state] += joint_action_probability * self.two_d_vectors[CONSTANT.LEADER][joint_action][state]
-                vectors[CONSTANT.FOLLOWER][state] += joint_action_probability * self.two_d_vectors[CONSTANT.FOLLOWER][joint_action][state]
+        for joint_action in CONSTANT.JOINT_ACTIONS:
+            joint_action_probability = DR.joint[joint_action]
+            vectors[CONSTANT.LEADER] += joint_action_probability * self.two_d_vectors[CONSTANT.LEADER][joint_action]
+            vectors[CONSTANT.FOLLOWER] += joint_action_probability * self.two_d_vectors[CONSTANT.FOLLOWER][joint_action]
 
         return AlphaVector(DR,vectors[0],vectors[1],sota=sota2)
     
