@@ -4,7 +4,7 @@
 #SBATCH --time=00:20:00
 #SBATCH --error=error_file_jobsh.txt
 #SBATCH --job-name=$1
-#SBATCH --mem=10G
+#SBATCH --mem=20G
 #SBATCH --output=output.log
 
 module purge
