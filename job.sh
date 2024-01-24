@@ -29,7 +29,7 @@ echo "Run problem : $1 with horizon: $2 and iter : $3"
 
 
 cd /scratch/s3918343/venvs/thesis/Thesis
-
+python -m pip install joblib
 python experiment_server.py problem=$1 horizon=$2 iter=$3
 echo " SOLVING DONE"
 

@@ -1,15 +1,17 @@
 ##  CLASS DEFINITIONS
+
 import numpy as np
 from decpomdp import DecPOMDP
 from constant import Constants
 from utilities import *
 import random
 import gc
+
 gc.enable()
 
 CONSTANT = None
 utilities = None
-PROBLEM =None
+PROBLEM = None
 
 def set_problem(prob):
     global CONSTANT,utilities,PROBLEM
