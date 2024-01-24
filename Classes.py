@@ -44,15 +44,8 @@ class AlphaVector:
             value += CONSTANT.TRANSITION_FUNCTION[joint_action][next_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][joint_observation]* self.vectors[agent][next_state]
         return value
             
-        # note : u can filter the zero probabilites out of the vector to reduce computational 
-    # def payoff_function(self,belief,game_type,beta):
-    #     payoffs = {}
-    #     for agent in range(0,2):
-    #         payoffs[agent] = np.zeros(len(CONSTANT.JOINT_ACTIONS))
-    #         for joint_action in CONSTANT.JOINT_ACTIONS:
-    #             for state in CONSTANT.STATES:
-    #                 payoffs[agent][joint_action] += belief.value[state] * beta.two_d_vectors[agent][joint_action][state]
-    #     return payoffs,beta
+    # note : u can filter the zero probabilites out of the vector to reduce computational 
+   
     
 
     
@@ -87,8 +80,7 @@ class BetaVector:
         for agent in range(0,2):
             payoffs[agent] = np.zeros(len(CONSTANT.JOINT_ACTIONS))
             for joint_action in CONSTANT.JOINT_ACTIONS:
-                for state in CONSTANT.STATES:
-                    payoffs[agent][joint_action] += belief.value[state] * self.two_d_vectors[agent][joint_action][state]
+                payoffs[agent][joint_action] = belief.value * self.two_d_vectors[agent][joint_action]
         return payoffs
     
     def solve(self,belief,game_type,sota):
