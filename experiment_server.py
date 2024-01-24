@@ -65,18 +65,19 @@ def add_to_database(database,horizon,game_type,num_iterations,average_time,num_b
 
 database = initialize_database()
 density = 0.1
+print("\n\nInitializing problem .... waiting ...")
+problem = DecPOMDP(file_name,horizon = planning_horizon, num_players=1)
+Classes.set_problem(problem)
 for game_type in ["cooperative","stackelberg","zerosum"]:
     for sota_ in [True,False]:
-        print("\n\nInitializing problem .... waiting ...")
-        problem = DecPOMDP(file_name,horizon = planning_horizon, num_players=1)
-        Classes.set_problem(problem)
+      
         for horizon_ in range(1,planning_horizon+1):
             print(f"\n===== GAME of type {game_type} WITH HORIZON {horizon_} , SOTA {sota_} =====")
             game = Classes.PBVI(problem=problem,horizon=horizon_,density=0.1,gametype=game_type,sota=sota_)
             policy,leader_values,follower_values, time_  = SOLVE(game,num_iterations)
             num_beliefs = game.belief_space.belief_size()
             for iters in range(num_iterations):
-                add_to_database(database,horizon_,game_type,iters,time_,num_beliefs,leader_values[iters],follower_values[iters],sota_,density)
+                add_to_database(database,horizon_,game_type,iters+1,time_,num_beliefs,leader_values[iters],follower_values[iters],sota_,density)
 print("Calculations done... exporting to csv....")
 database = pd.DataFrame(database)
 file_name = f"{file_name}_{planning_horizon}_{num_iterations}.csv"
