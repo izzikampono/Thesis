@@ -40,9 +40,8 @@ class AlphaVector:
 
     def get_beta_future_value(self,agent,joint_action,joint_observation):
         value = np.zeros(len(CONSTANT.STATES))
-        for state in CONSTANT.STATES:
-            for next_state in CONSTANT.STATES:
-                value[state] += CONSTANT.TRANSITION_FUNCTION[joint_action][state][next_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][state][joint_observation]* self.vectors[agent][next_state]
+        for next_state in CONSTANT.STATES:
+            value += CONSTANT.TRANSITION_FUNCTION[joint_action][next_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][joint_observation]* self.vectors[agent][next_state]
         return value
             
         # note : u can filter the zero probabilites out of the vector to reduce computational 
@@ -243,8 +242,7 @@ class PBVI:
         self.policies[1] = self.tree_extraction(initial_belief,agent=1,timestep =0)  
         return self.policies 
       
-    def iteration(self,iterations,decay):
-        print(f"iteration : {_}")
+    def iteration(self,decay):
         self.backward_induction()
         self.density /= decay #hyperparameter
         leader_value , follower_value = self.value_function.get_values_initial_belief()
@@ -358,7 +356,7 @@ class Belief:
     def next_belief(self,joint_DR,joint_observation):
         """function to calculate next belief based on current belief, DR/joint action , and observation"""
         # returns the value of b1
-        next_belief_value= np.zeros(len(self.value))
+        next_belief_value= np.zeros(len(CONSTANT.STATES))
 
         if type(joint_observation) != int :
             joint_observation = self.PROBLEM.joint_observations.index(joint_observation)
@@ -366,17 +364,13 @@ class Belief:
 
         if type(joint_DR) == int: # if joint_DR enterred as a deterministic action 
             for next_state in CONSTANT.STATES:
-                value = 0
-                for state in CONSTANT.STATES:
-                    value += self.value[state] * CONSTANT.TRANSITION_FUNCTION[joint_DR][state][next_state]  * CONSTANT.OBSERVATION_FUNCTION[joint_DR][state][joint_observation]
+                next_belief_value[next_state]+= np.linalg.norm(self.value * CONSTANT.TRANSITION_FUNCTION[joint_DR][next_state]  * CONSTANT.OBSERVATION_FUNCTION[joint_DR][joint_observation])
 
-                next_belief_value[next_state]+=value    
         else:   # if joint_DR is a decision rule
             for next_state in CONSTANT.STATES:
                 value = 0
-                for state in CONSTANT.STATES:
-                    for joint_action in CONSTANT.JOINT_ACTIONS:
-                        value += self.value[state] * joint_DR[joint_action] * CONSTANT.TRANSITION_FUNCTION[joint_action][state][next_state]  * CONSTANT.OBSERVATION_FUNCTION[joint_action][state][joint_observation]
+                for joint_action in CONSTANT.JOINT_ACTIONS:
+                    value += self.value * joint_DR[joint_action] * CONSTANT.TRANSITION_FUNCTION[joint_action][next_state]  * CONSTANT.OBSERVATION_FUNCTION[joint_action][joint_observation]
                 next_belief_value[next_state]+=value
 
         if np.sum(next_belief_value) ==0 :

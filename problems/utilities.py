@@ -28,7 +28,6 @@ def set_problem(problem_,horizon_):
     joint_actions = [i for i in range(len(problem.joint_actions))]
     joint_observations = [i for i in range(len(problem.joint_observations))]
     transition_function = problem.transition_fn
-    observation_function = problem.observation_fn
     problem.reset()
 
 
@@ -110,57 +109,6 @@ def  observation_probability(joint_observation,belief,joint_action):
     return sum
 
 
-def next_belief(belief,joint_DR,joint_observation):
-    """function to calculate next belief based on current belief, DR/joint action , and observation"""
-    # returns the value of b1
-    global states
-    next_belief = []
-
-    if type(joint_observation) != int :
-        joint_observation = problem.joint_observations.index(joint_observation)
-
-
-    if type(joint_DR) == int: # if joint_DR enterred as a deterministic action 
-        for next_state in states:
-            val = 0
-            for state in states:
-                val += belief[state] * transition_function[joint_DR][state][next_state]  * observation_function[joint_DR][state][joint_observation]
-            next_belief.append(val)
-        
-    else:   # if joint_DR is a decision rule
-        for states in states:
-            val = 0
-            for state in states:
-                for joint_action in joint_actions:
-                    val += belief[state] * joint_DR[joint_action] * transition_function[joint_action][state][next_state]  * observation_function[joint_action][state][joint_observation]
-            next_belief.append(val)
-
-    next_belief = normalize(next_belief)
-
-    if np.sum(next_belief)<= 1 and np.sum(next_belief)> 0.99999:
-        return np.array(next_belief)
-    else:
-        print("err0r : belief doesn not sum up to 1\n")
-    return np.array(next_belief)
-    
-def Q(bt,t,u,V_table,gametype,player):
-    """function to calculate exact q values (subroutines) for Linear program"""
-    V_next_t = V_table[t+1]
-
-    reward = rewards[gametype][player]
-
-    sum = 0
-    for x in states :
-        for z in joint_observations :
-            if t == horizon:
-                V_next_t =  0
-            else:
-                b_next = next_belief(bt,np.identity(9)[u],z)
-               
-                V_next_t, _ , _ , aj = value_closest_b(b_next,V_table,t+1)
- 
-            sum += bt[x] * reward[u][x] +  observation_probability(z,bt,u) * V_next_t
-    return sum
 
 
 
@@ -340,70 +288,6 @@ def Q2_blind(bt,u):
 ##########################################################################################################################################################################################################################################
 #####################################################################################################################
 
-##  CLASS DEFINITIONS
-
-
-class AlphaVector:
-    def __init__(self,DR,vector1,vector2,sota=False):
-        self.DR = DR
-        self.sota = sota
-        self.vectors = [vector1,vector2]
-        
-        
-    def get_value(self,belief):
-        return np.dot(belief,self.vectors[0]),np.dot(belief,self.vectors[1])
-
-    def print_vector(self):
-        print(self.vectors)
-
-    def set_value(self,agent,hidden_state,value):
-        self.vectors[agent][hidden_state] = value
-
-    # TODO  To improve efficiency ... in the cases of zerosum and cooperative games, we only need the first player payoffs, so we can skip the second player payoffs and provide the same for both players.  
-    def get_beta_two_d_vector(self,game_type):
-        two_d_vectors = {}
-
-        for agent in range(0,2):
-            reward = rewards[game_type][agent]
-            two_d_vectors[agent] = np.zeros((len(states),len(joint_actions)))
-            for hidden_state in states:
-                for joint_action in joint_actions:
-                    two_d_vectors[agent][hidden_state][joint_action] = reward[joint_action][hidden_state]
-                    
-                    if game_type == "stackelberg" and self.sota==True and agent==1 : 
-                        continue #for the blind strategy of the stackelberg games
-                    
-                    for next_hidden_state in states:
-                        for joint_observation in joint_observations:
-                            two_d_vectors[agent][hidden_state][joint_action] += transition_function[joint_action][hidden_state][next_hidden_state] * observation_function[joint_action][hidden_state][joint_observation]* self.vectors[agent][next_hidden_state]
-                    
-        # note : u can filter the zero probabilites out of the vector to reduce computational 
-
-        return BetaVector(two_d_vectors[0],two_d_vectors[1])
-
-    def payoff_function(self,belief,game_type):
-
-        beta = self.get_beta_two_d_vector(game_type)
-        payoffs = {}
-        for agent in range(0,2):
-            payoffs[agent] = np.zeros(len(joint_actions))
-            for joint_action in joint_actions:
-                for hidden_state in states:
-                    payoffs[agent][joint_action] += belief[hidden_state] * beta.two_d_vectors[agent][hidden_state][joint_action]
-            
-        return payoffs,beta
-
-    def solve(self,belief,game_type):
-        payoffs ,beta = self.payoff_function(belief,game_type)
-        if self.sota==False :
-            value , DR , DR0 , DR1 = LP(payoffs[0],payoffs[1])
-        else:
-            # print("HERE IN SOTA IF STATEMENT")
-            value, DR, DR0, DR1 = sota_strategy(payoffs[0],payoffs[1],game_type)
-        alpha = beta.get_alpha_vector(DecisionRule(DR0,DR1,DR))
-        if (alpha.sota !=self.sota):
-            alpha.sota = self.sota
-        return value, alpha
 
     
     
@@ -507,40 +391,7 @@ class ValueFunction:
         self.add_alpha_vector(max_alpha,timestep)
 
         
-    
-    def tree_extraction(self,belief, agent,timestep):
-
-        # edge case at last horizon
-        if timestep == self.horizon : return PolicyTree(None)
-
-        #initialize policy and DR_bt
-        policy = PolicyTree(None)
-        DR = DecisionRule(None,None,None)
-
-        max = -np.inf
-
-        # extract decision rule of agent from value function at current belief
-        for alpha in self.vector_sets[timestep]:
-            value = alpha.get_value(belief)
-            if (max<value[agent]) :
-                max = value[agent]
-                DR = alpha.DR
-
-        for u_agent in actions[agent]:
-            #if probability of action is not 0
-            if DR.agents[agent][u_agent] > 0:
-
-                #get actions of the other agent
-                for u_not_agent in actions[int(not agent)]:
-
-                    joint_action = problem.get_joint_action(u_agent,u_not_agent)
-                    for joint_observation in joint_observations:
-                        belief_next = next_belief(belief,joint_action,joint_observation)
-                        subtree = self.tree_extraction(belief_next,agent,timestep+1)
-                        policy.add_subtree(belief_next,subtree)
-                    
-        policy.data = DR.agents[agent]
-        return policy
+ 
     
    
     
@@ -582,55 +433,5 @@ class PBVI:
         self.policies[1] = self.value_function.tree_extraction(self.problem.b0,1,0)  
         return self.policies   
     
-############################################################################################################     
-
-class BeliefSpace:
-    def __init__(self,horizon,initial_belief,density):
-        self.density = density
-        self.belief_states = {}
-        for timestep in range(horizon+1):
-            self.belief_states[timestep] = []
-        self.belief_states[0] = [initial_belief]
-        self.horizon = horizon
-
-
-    def distance(self,belief,timestep):
-        """function to check if a new belief point is "sufficiently different from other points in the bag of beliefs """
-        if len(self.belief_states[timestep])<=0: return True
-        belief_states = np.array(self.belief_states[timestep])
-        min_belief = min(belief_states, key=lambda stored_belief: np.linalg.norm(stored_belief-belief))
-        min_magnitude = np.linalg.norm(min_belief-belief)
-        return min_magnitude > self.density
-        # check what happens if there are no stored beliefs at timestep
-    
-    def get_closest_belief(self,belief,timestep):
-        """ returns belief state at timestep t that is closest in distance to the input belief """
-        max = -np.inf
-        # random.sample(beliefs_t, len(beliefs_t))
-        for belief_t in self.belief_states[timestep].keys():
-            distance = np.abs(np.linalg.norm(np.array(belief) - np.array(belief_t)))
-            if distance<=max: 
-                next = belief_t
-                max = distance
-        if next: return next
-        else : print("err0r : no belief found")
-        
-
-    def belief_size(self):
-        size = 0
-        for timestep in range(self.horizon+1):
-            size+=len(self.belief_states[timestep])
-        return size
-
-    def expansion(self):
-        """populates self.belief_state table"""
-        for timestep in range(1,self.horizon):
-            for previous_belief in self.belief_states[timestep-1]:
-                for joint_action in joint_actions:
-                    for joint_observation in joint_observations:
-                        belief = next_belief(previous_belief,joint_action,joint_observation)
-                        if self.distance(belief,timestep):
-                            self.belief_states[timestep].append(belief)
-                          
 
                         
