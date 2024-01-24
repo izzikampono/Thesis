@@ -282,13 +282,14 @@ class PBVI:
                 for u_not_agent in CONSTANT.ACTIONS[int(not agent)]:
 
                     joint_action = CONSTANT.PROBLEM.get_joint_action(u_agent,u_not_agent)
-                    for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                        #get next belief of joint action and observation
-                        belief_next = belief.next_belief(joint_action,joint_observation)
-                        #create subtree for next belief
-                        if self.belief_space.distance(belief_next,timestep):
-                            subtree = self.tree_extraction(belief_next,agent,timestep+1)
-                            policy.add_subtree(belief_next,subtree)
+                    if DR.joint[joint_action]>0:
+                        for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
+                            #get next belief of joint action and observation
+                            belief_next = belief.next_belief(joint_action,joint_observation)
+                            #create subtree for next belief
+                            if self.belief_space.distance(belief_next,timestep):
+                                subtree = self.tree_extraction(belief_next,agent,timestep+1)
+                                policy.add_subtree(belief_next,subtree)
         policy.data.append(DR.individual[agent])
         policy.data.append(max)
         return policy
