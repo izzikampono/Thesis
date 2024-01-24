@@ -196,7 +196,7 @@ class ValueFunction:
             values_follower.append(value_follower)
         if len(values_leader)<=1 or len(values_follower)<1:
             return value_leader,value_follower
-        else: return np.max(value_leader),np.max(value_follower)
+        else: return np.average(value_leader),np.average(value_follower)
     
 
 
