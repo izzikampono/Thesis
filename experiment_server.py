@@ -27,13 +27,13 @@ else :
 
 
 # solve
-def SOLVE(game):
+def SOLVE(game,iterations):
     start_time = time.time()
-    policy = game.solve(num_iterations,0.9)
+    policy,leader_values,follower_values = game.solve(iterations,0.9)
     end_time = time.time()
     solve_time = end_time - start_time
     value_fn = game.value_function
-    return policy,solve_time,value_fn
+    return policy,leader_values,follower_values,solve_time,
 
 def initialize_database():
     database = {"gametype":[],
@@ -67,15 +67,16 @@ database = initialize_database()
 density = 0.1
 for game_type in ["cooperative","stackelberg","zerosum"]:
     for sota_ in [True,False]:
+        print("\n\nInitializing problem .... waiting ...")
+        problem = DecPOMDP(file_name,horizon = planning_horizon, num_players=1)
+        Classes.set_problem(problem)
         for horizon_ in range(1,planning_horizon+1):
             print(f"\n===== GAME of type {game_type} WITH HORIZON {horizon_} , SOTA {sota_} =====")
-            problem = DecPOMDP(file_name,horizon = horizon_, num_players=1)
-            Classes.set_problem(problem)
             game = Classes.PBVI(problem=problem,horizon=horizon_,density=0.1,gametype=game_type,sota=sota_)
-            policy, time_ , value_fn = SOLVE(game)
+            policy,leader_values,follower_values, time_  = SOLVE(game,num_iterations)
             num_beliefs = game.belief_space.belief_size()
-            value0,value1= value_fn.get_values_initial_belief()
-            add_to_database(database,horizon_,game_type,2,time_,num_beliefs,np.average(value0),np.average(value1),sota_,density)
+            for iters in range(num_iterations):
+                add_to_database(database,horizon_,game_type,iters,time_,num_beliefs,leader_values[iters],follower_values[iters],sota_,density)
 print("Calculations done... exporting to csv....")
 database = pd.DataFrame(database)
 file_name = f"{file_name}_{planning_horizon}_{num_iterations}.csv"

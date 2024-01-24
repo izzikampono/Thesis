@@ -73,10 +73,8 @@ for game_type in ["cooperative","stackelberg","zerosum"]:
             problem = DecPOMDP(file_name,horizon = horizon_, num_players=1)
             Classes.set_problem(problem)
             game = Classes.PBVI(problem=problem,horizon=horizon_,density=0.1,gametype=game_type,sota=sota_)
-            game.belief_space.expansion()
             for i in range(num_iterations):
                 policy, time_ , value_fn = SOLVE(game)
-                leader_value,follower_value = value_fn.get_values_initial_belief()
                 num_beliefs = game.belief_space.belief_size()
                 add_to_database(database,horizon_,game_type,2,time_,num_beliefs,leader_value,follower_value,sota_)
 print("Calculations done... exporting to csv....")

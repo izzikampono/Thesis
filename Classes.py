@@ -16,7 +16,7 @@ def set_problem(prob):
     PROBLEM = prob
     CONSTANT = Constants(prob)
     utilities = Utilities(CONSTANT)
-    print(f"problem set to {CONSTANT.NAME}")
+    print(f"PROBLEM SET T0 ==> {CONSTANT.NAME}")
     return
 
 
@@ -192,7 +192,9 @@ class ValueFunction:
             value_leader,value_follower = alpha.get_value(self.beliefs.initial_belief)
             values_leader.append(value_leader)
             values_follower.append(value_follower)
-        return values_leader,values_follower
+        if len(values_leader)<=1 or len(values_follower)<1:
+            return value_leader,value_follower
+        else: return np.max(value_leader),np.max(value_follower)
     
 
 
@@ -210,8 +212,8 @@ class PBVI:
         self.horizon = horizon
         self.density = density
 
-        self.leader_experiment_values = []
-        self.follower_experiment_values = []
+        self.leader_b0_values = []
+        self.follower_b0_values = []
 
 
     def backward_induction(self):
@@ -229,10 +231,12 @@ class PBVI:
             self.backward_induction()
             self.density /= decay #hyperparameter
             leader_value , follower_value = self.value_function.get_values_initial_belief()
+            self.leader_b0_values.append(leader_value) 
+            self.follower_b0_values.append(follower_value) 
         initial_belief = self.belief_space.get_inital_belief()
         self.policies[0] = self.tree_extraction(initial_belief,agent=0,timestep = 0)    
         self.policies[1] = self.tree_extraction(initial_belief,agent=1,timestep =0)  
-        return self.policies 
+        return self.policies ,  self.leader_b0_values,self.follower_b0_values
       
     def iteration(self,decay):
         self.backward_induction()
