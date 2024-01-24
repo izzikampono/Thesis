@@ -31,7 +31,7 @@ Classes.set_problem(problem)
 # solve
 def SOLVE(game):
     start_time = time.time()
-    policy = game.solve(num_iterations,0.9)
+    v0,v1,policy = game.iteration(0.9)
     end_time = time.time()
     solve_time = end_time - start_time
     value_fn = game.value_function
@@ -73,13 +73,15 @@ for game_type in ["cooperative","stackelberg","zerosum"]:
             problem = DecPOMDP(file_name,horizon = horizon_, num_players=1)
             Classes.set_problem(problem)
             game = Classes.PBVI(problem=problem,horizon=horizon_,density=0.1,gametype=game_type,sota=sota_)
+            game.belief_space.expansion()
             for i in range(num_iterations):
-                leader_value, follower_value = policy, time_ , value_fn = SOLVE(game)
+                policy, time_ , value_fn = SOLVE(game)
+                leader_value,follower_value = value_fn.get_values_initial_belief()
                 num_beliefs = game.belief_space.belief_size()
                 add_to_database(database,horizon_,game_type,2,time_,num_beliefs,leader_value,follower_value,sota_)
 print("Calculations done... exporting to csv....")
 database = pd.DataFrame(database)
-file_name = f"{file_name}_{planning_horizon}.csv"
+file_name = f"{file_name}_{planning_horizon}_{num_iterations}_experiment.csv"
 database.to_csv(file_name, index=False)
 print(f"RESULTS WRITTEN AS : {file_name}:\n")
 

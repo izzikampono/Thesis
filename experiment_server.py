@@ -23,10 +23,7 @@ else :
     print("not enough arguments")
     sys.exit()
 
-#import problem
-problem = DecPOMDP(file_name, 1,horizon=planning_horizon)
-Classes.set_problem(problem)
-density = 0.1
+
 
 
 # solve
@@ -67,20 +64,21 @@ def add_to_database(database,horizon,game_type,num_iterations,average_time,num_b
     return
 
 database = initialize_database()
+density = 0.1
 for game_type in ["cooperative","stackelberg","zerosum"]:
     for sota_ in [True,False]:
         for horizon_ in range(1,planning_horizon+1):
             print(f"\n===== GAME of type {game_type} WITH HORIZON {horizon_} , SOTA {sota_} =====")
             problem = DecPOMDP(file_name,horizon = horizon_, num_players=1)
             Classes.set_problem(problem)
-            game = Classes.PBVI(problem=problem,horizon=horizon_,density=density,gametype=game_type,sota=sota_)
+            game = Classes.PBVI(problem=problem,horizon=horizon_,density=0.1,gametype=game_type,sota=sota_)
             policy, time_ , value_fn = SOLVE(game)
             num_beliefs = game.belief_space.belief_size()
             value0,value1= value_fn.get_values_initial_belief()
             add_to_database(database,horizon_,game_type,2,time_,num_beliefs,np.average(value0),np.average(value1),sota_,density)
 print("Calculations done... exporting to csv....")
 database = pd.DataFrame(database)
-file_name = f"{file_name}_{planning_horizon}.csv"
+file_name = f"{file_name}_{planning_horizon}_{num_iterations}.csv"
 path = "server_results/"
 database.to_csv(path+file_name, index=False)
 print(f"RESULTS WRITTEN AS : {file_name}:\n")

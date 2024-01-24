@@ -3,7 +3,7 @@ import pandas as pd
 import random
 from decpomdp import DecPOMDP
 import matplotlib.pyplot as plt
-from docplex.mp.model import Model
+from docplex.cp.model import CpoModel as Model
 from docplex.cp.config import context
 import sys
 
@@ -110,12 +110,15 @@ def  observation_probability(joint_observation,belief,joint_action):
 
 
 
-
+last_solution = None
 
 
 def LP(Q1,Q2):
- 
+    
     milp = Model("tiger problem")
+    # if (last_solution):milp.mip_start_sol(last_solution)
+    if (last_solution):milp.set_starting_point(last_solution, complete_vars=True
+)
     a1_0 , a1_1, a1_2 = milp.continuous_var_list(3,name = ["a1_0","a1_1","a1_2"],ub=1,lb=0)
     a2_0 , a2_1, a2_2 = milp.binary_var_list(3, name = ["a2_0","a2_1","a2_2"],ub=1)
     a0_00, a0_01 ,a0_02 ,a0_10 ,a0_11 ,a0_12,a0_20,a0_21,a0_22 = milp.continuous_var_list(9,name  = [f"a0_{i}{j}" for i in actions[0] for j in actions[1]],ub=1,lb=0)
@@ -160,6 +163,7 @@ def LP(Q1,Q2):
     milp.add_constraint(a0_00 + a0_01 + a0_02+ a0_10+ a0_11 + a0_12+ a0_20+ a0_21 + a0_22 ==1)
 
     sol = milp.solve()
+    last_solution = sol
     # print(f"value solution = {milp.solution.get_objective_value()}")
     return milp.solution.get_objective_value(),milp.solution.get_values(joint_DR), milp.solution.get_values(player1_DR), milp.solution.get_values(player2_DR)
 

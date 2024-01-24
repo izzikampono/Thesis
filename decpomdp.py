@@ -26,22 +26,14 @@ class DecPOMDP:
         self.num_observations = [len(self.observations[a]) for a in range(self.num_agents)]
         self.joint_observations = list(itertools.product(*self.observations))
         self.num_joint_observations = len(self.joint_observations)
-        self.all_histories = [self._generate_all_histories(t) for t in range(self.horizon)]
+        # self.all_histories = [self._generate_all_histories(t) for t in range(self.horizon)]
         self.transition_fn = read_transition(raw_data["T"], self.states, self.actions)
         self.observation_fn = read_observation(raw_data["O"], self.states, self.actions, self.observations)
         self.reward_fn = read_rewards(raw_data["R"], self.states, self.actions, self.observations)
         self.reward_fn_sa = np.zeros((self.num_joint_actions, self.num_states))
-        if self.num_players > 1:
-            self.reward_fn_sa = np.zeros((self.num_players,self.num_joint_actions, self.num_states))
-            for i in range(num_players):
-                for ja in range(self.num_joint_actions):
-                    for s in range(self.num_states):
-                        self.reward_fn_sa[i,ja, s] = sum([self.reward_fn[i,ja, s, s1, jz] * self.transition_fn[ja, s, s1] * self.observation_fn[ja, s1, jz] for s1 in range(self.num_states) for jz in range(self.num_joint_observations)])
-
-        else:
-            for ja in range(self.num_joint_actions):
-                for s in range(self.num_states):
-                    self.reward_fn_sa[ja, s] = sum([self.reward_fn[ja, s, s1, jz] * self.transition_fn[ja, s, s1] * self.observation_fn[ja, s1, jz] for s1 in range(self.num_states) for jz in range(self.num_joint_observations)])
+        for ja in range(self.num_joint_actions):
+            for s in range(self.num_states):
+                self.reward_fn_sa[ja, s] = sum([self.reward_fn[ja, s, s1, jz] * self.transition_fn[ja, s, s1] * self.observation_fn[ja, s1, jz] for s1 in range(self.num_states) for jz in range(self.num_joint_observations)])
     
         self.action_dictionary={}
         n=0
@@ -94,16 +86,16 @@ class DecPOMDP:
         self.state = state
         self.n_steps = n_steps
 
-    def _generate_all_histories(self, t):
-        all_product_set = []
-        for a in range(self.num_agents):
-            if self.observation_histories:
-                product_set = [self.observations[a]] * min(t, self.truncation)
-            else:
-                product_set = [self.actions[a], self.observations[a]] * min(t, self.truncation)
-            all_hist_per_agent = list(itertools.product(*product_set))
-            all_product_set.append(all_hist_per_agent)
-        return list(itertools.product(*all_product_set))
+    # def _generate_all_histories(self, t):
+    #     all_product_set = []
+    #     for a in range(self.num_agents):
+    #         if self.observation_histories:
+    #             product_set = [self.observations[a]] * min(t, self.truncation)
+    #         else:
+    #             product_set = [self.actions[a], self.observations[a]] * min(t, self.truncation)
+    #         all_hist_per_agent = list(itertools.product(*product_set))
+    #         all_product_set.append(all_hist_per_agent)
+    #     return list(itertools.product(*all_product_set))
 
     def expand_history(self, history, action, observation):
         history = list(history)
