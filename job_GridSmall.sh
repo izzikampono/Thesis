@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=50
 #SBATCH --time=00:30:00
 #SBATCH --error=error_file_GridSmall.txt
-#SBATCH --job-name=$1
+#SBATCH --job-name=GridSmall_"$2"
 #SBATCH --mem=25G
 #SBATCH --output=output_GridSmall.log
 

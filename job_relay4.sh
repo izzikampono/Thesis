@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=50
 #SBATCH --time=00:30:00
 #SBATCH --error=error_file_relay4.txt
-#SBATCH --job-name=$1
+#SBATCH --job-name=relay4_"$2"
 #SBATCH --mem=25G
 #SBATCH --output=output_relay4.log
 

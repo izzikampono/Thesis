@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=50
 #SBATCH --time=00:30:00
 #SBATCH --error=error_file_prisoners.txt
-#SBATCH --job-name=$1
+#SBATCH --job-name=prisoners
 #SBATCH --mem=25G
 #SBATCH --output=output_prisoners.log
 

@@ -3,7 +3,7 @@
 #SBATCH --cpus-per-task=45
 #SBATCH --time=00:30:00
 #SBATCH --error=error_file_longFireFight.txt
-#SBATCH --job-name=$1
+#SBATCH --job-name=longFireFight_"$2""
 #SBATCH --mem=25G
 #SBATCH --output=output_longFireFight.log
 
