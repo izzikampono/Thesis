@@ -67,9 +67,9 @@ class BetaVector:
 
         vectors = np.zeros((2,len(CONSTANT.STATES)))
         for joint_action in CONSTANT.JOINT_ACTIONS:
-            joint_action_probability = DR.joint[joint_action]
-            vectors[CONSTANT.LEADER] += joint_action_probability * self.two_d_vectors[CONSTANT.LEADER][joint_action]
-            vectors[CONSTANT.FOLLOWER] += joint_action_probability * self.two_d_vectors[CONSTANT.FOLLOWER][joint_action]
+            if DR.joint[joint_action]>0:
+                vectors[CONSTANT.LEADER] += DR.joint[joint_action] * self.two_d_vectors[CONSTANT.LEADER][joint_action]
+                vectors[CONSTANT.FOLLOWER] += DR.joint[joint_action] * self.two_d_vectors[CONSTANT.FOLLOWER][joint_action]
 
         return AlphaVector(DR,vectors[0],vectors[1],sota=sota2)
     
@@ -80,7 +80,7 @@ class BetaVector:
         for agent in range(0,2):
             payoffs[agent] = np.zeros(len(CONSTANT.JOINT_ACTIONS))
             for joint_action in CONSTANT.JOINT_ACTIONS:
-                payoffs[agent][joint_action] = belief.value * self.two_d_vectors[agent][joint_action]
+                payoffs[agent][joint_action] = np.linalg.norm(belief.value * self.two_d_vectors[agent][joint_action])
         return payoffs
     
     def solve(self,belief,game_type,sota):
