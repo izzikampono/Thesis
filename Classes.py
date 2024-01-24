@@ -16,7 +16,7 @@ def set_problem(prob):
     PROBLEM = prob
     CONSTANT = Constants(prob)
     utilities = Utilities(CONSTANT)
-    print(f"PROBLEM SET T0 ==> {CONSTANT.NAME}")
+    # print(f"PROBLEM SET T0 ==> {CONSTANT.NAME}")
     return
 
 
@@ -202,6 +202,7 @@ class ValueFunction:
 
 class PBVI:
     def __init__(self,problem,horizon,density,gametype,sota=False):
+        set_problem(problem)
         self.sota = sota
         self.belief_space = BeliefSpace(horizon,problem.b0,density)
         self.value_function = ValueFunction(horizon,self.belief_space,sota=self.sota)
@@ -233,9 +234,12 @@ class PBVI:
             leader_value , follower_value = self.value_function.get_values_initial_belief()
             self.leader_b0_values.append(leader_value) 
             self.follower_b0_values.append(follower_value) 
+        print(f"    extracting policy...")
         initial_belief = self.belief_space.get_inital_belief()
         self.policies[0] = self.tree_extraction(initial_belief,agent=0,timestep = 0)    
         self.policies[1] = self.tree_extraction(initial_belief,agent=1,timestep =0)  
+        print(f"    policy extraction done")
+
         return self.policies ,  self.leader_b0_values,self.follower_b0_values
       
     def iteration(self,decay):

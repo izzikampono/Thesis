@@ -6,7 +6,6 @@ from constant import Constants
 import time
 import sys
 import gc
-
 gc.enable()
 
 #example run :
@@ -68,6 +67,7 @@ density = 0.1
 print("\n\nInitializing problem .... waiting ...")
 problem = DecPOMDP(file_name,horizon = planning_horizon, num_players=1)
 Classes.set_problem(problem)
+experiment_start_time = time.time()
 for game_type in ["cooperative","stackelberg","zerosum"]:
     for sota_ in [True,False]:
       
@@ -79,6 +79,9 @@ for game_type in ["cooperative","stackelberg","zerosum"]:
             for iters in range(num_iterations):
                 add_to_database(database,horizon_,game_type,iters+1,time_,num_beliefs,leader_values[iters],follower_values[iters],sota_,density)
 print("Calculations done... exporting to csv....")
+experiment_end_time = time.time()
+print("=============================END OF EXPERIMENT==========================================")
+print(f"Experiment finished in {experiment_end_time-experiment_start_time}")
 database = pd.DataFrame(database)
 file_name = f"{file_name}_{planning_horizon}_{num_iterations}.csv"
 path = "server_results/"

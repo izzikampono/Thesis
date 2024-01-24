@@ -15,7 +15,6 @@ class Constants:
         self.TRANSITION_FUNCTION = np.transpose(problem.transition_fn, axes=(0,2,1))
         self.OBSERVATION_FUNCTION =problem.observation_fn.reshape((problem.num_joint_actions,problem.num_joint_observations,problem.num_states))
         self.REWARDS = self.initialize_rewards()
-        self.PROBLEM.reset()
         self.LEADER = 0
         self.FOLLOWER = 1
 

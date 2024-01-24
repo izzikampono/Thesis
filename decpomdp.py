@@ -43,7 +43,9 @@ class DecPOMDP:
                 n+=1
 
         self.action_dict = dict((val, key) for key, val in self.action_dictionary.items())
-
+    def set_horizon(self,horizon):
+        self.horizon = horizon
+        return self
     def get_joint_action(self,u1,u2):
         return self.action_dictionary[f"{u1}{u2}"]
     def get_seperate_action(self,uj):

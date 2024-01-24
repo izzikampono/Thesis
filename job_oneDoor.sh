@@ -1,11 +1,11 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=45
+#SBATCH --cpus-per-task=50
 #SBATCH --time=00:30:00
-#SBATCH --error=error_file_longFireFight.txt
+#SBATCH --error=error_file_oneDoor.txt
 #SBATCH --job-name=$1
 #SBATCH --mem=25G
-#SBATCH --output=output_longFireFight.log
+#SBATCH --output=output_oneDoor.log
 
 module purge
 module load Python/3.9.6-GCCcore-11.2.0
