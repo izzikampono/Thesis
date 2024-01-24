@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=40
-#SBATCH --time=01:00:00
+#SBATCH --cpus-per-task=50
+#SBATCH --time=02:00:00
 #SBATCH --error=error_file_prisoners.txt
 #SBATCH --job-name=prisoners
 #SBATCH --mem=25G
