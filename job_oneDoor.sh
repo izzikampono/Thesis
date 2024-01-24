@@ -4,7 +4,7 @@
 #SBATCH --time=01:0:00
 #SBATCH --error=error_file_oneDoor.txt
 #SBATCH --job-name=oneDoor
-#SBATCH --mem=36G
+#SBATCH --mem=10G
 #SBATCH --output=output_oneDoor.log
 
 module purge
