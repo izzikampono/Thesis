@@ -1,0 +1,25 @@
+gametype,SOTA,horizon,num_iterations,average_time,number_of_beliefs,ave_leader_value_b0,ave_follower_value_b0
+cooperative,Stackelberg,1,1,0.0608830451965332,4,-15.0,-15.0
+cooperative,Stackelberg,2,1,0.10448575019836426,9,-22.5,-22.5
+cooperative,Stackelberg,3,1,0.16229820251464844,14,-32.5,-32.5
+cooperative,Stackelberg,4,1,0.25296688079833984,19,-40.0,-40.0
+cooperative,State of the Art,1,1,0.0022330284118652344,4,-15.0,-15.0
+cooperative,State of the Art,2,1,0.0068318843841552734,9,-22.5,-22.5
+cooperative,State of the Art,3,1,0.015208959579467773,14,-32.5,-32.5
+cooperative,State of the Art,4,1,0.03548288345336914,19,-40.0,-40.0
+zerosum,Stackelberg,1,1,0.04424786567687988,4,-15.0,15.0
+zerosum,Stackelberg,2,1,0.10162091255187988,9,-22.5,22.5
+zerosum,Stackelberg,3,1,0.16976094245910645,14,-32.5,32.5
+zerosum,Stackelberg,4,1,0.26778101921081543,19,-40.0,40.0
+zerosum,State of the Art,1,1,0.11090207099914551,4,-17.24376791035278,-17.24376791035278
+zerosum,State of the Art,2,1,0.17769861221313477,9,-21.69176842256725,-21.69176842256725
+zerosum,State of the Art,3,1,0.3230440616607666,14,-25.86368764013061,-25.86368764013061
+zerosum,State of the Art,4,1,0.683734655380249,19,-30.152919158432262,-30.152919158432262
+stackelberg,Stackelberg,1,1,0.05133700370788574,4,-15.0,-29.0
+stackelberg,Stackelberg,2,1,0.11809587478637695,9,-22.5,-43.5
+stackelberg,Stackelberg,3,1,0.2119770050048828,14,-32.5,-52.0
+stackelberg,Stackelberg,4,1,0.27031779289245605,19,-40.0,-66.5
+stackelberg,State of the Art,1,1,0.04594731330871582,4,-15.0,-14.5
+stackelberg,State of the Art,2,1,0.10280990600585938,9,-22.5,-14.5
+stackelberg,State of the Art,3,1,0.1609971523284912,14,-32.5,-8.5
+stackelberg,State of the Art,4,1,0.2332618236541748,19,-40.0,-8.5

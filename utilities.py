@@ -96,7 +96,7 @@ class Utilities:
         sum=0
         for state in self.STATES:
             for next_state in self.STATES:
-                    sum += belief[state]  * self.TRANSITION_FUNCTION[joint_action][state][next_state] * self.OBSERVATION_FUNCTION[joint_action][state][joint_observation]
+                    sum += belief.value[state]  * self.TRANSITION_FUNCTION[joint_action][state][next_state] * self.OBSERVATION_FUNCTION[joint_action][state][joint_observation]
         return sum
 
 
@@ -105,8 +105,8 @@ class Utilities:
     def LP(self,Q1,Q2):
     
         milp = Model(f"{self.PROBLEM.name} problem")
-        leader_DR = milp.continuous_var_list(len(self.ACTIONS[0]),name = [f"a0_{i}" for i in self.ACTIONS[1]],ub=1,lb=0)
-        follower_DR = milp.binary_var_list(len(self.ACTIONS[1]), name = [f"a1_{i}" for i in self.ACTIONS[0]])
+        leader_DR = milp.continuous_var_list(len(self.ACTIONS[0]),name = [f"a0_{i}" for i in self.ACTIONS[0]],ub=1,lb=0)
+        follower_DR = milp.binary_var_list(len(self.ACTIONS[1]), name = [f"a1_{i}" for i in self.ACTIONS[1]])
         joint_DR = milp.continuous_var_list(len(self.JOINT_ACTIONS),name  = [f"aj_{i}" for i in self.JOINT_ACTIONS],ub=1,lb=0)
         
 
@@ -120,7 +120,6 @@ class Utilities:
         # define constraints 
 
         # define lhs of linear equivalence expression equal to V^2(b0,a1,a2) :
-
         lhs = 0
         for joint_action,joint_action_probability in enumerate(joint_DR):
             lhs += Q2[joint_action] * joint_action_probability 
@@ -151,9 +150,6 @@ class Utilities:
                 joint_action = self.PROBLEM.get_joint_action(leader_action,follower_action)
                 value+=joint_DR[joint_action]
             milp.add_constraint(value==follower_DR[follower_action])
-
-
-
 
         sol = milp.solve()
         milp.export_as_lp(f"Stackelberg_LP")
@@ -193,25 +189,22 @@ class Utilities:
 
 
     def zerosum_lp_leader(self,payoff):
-        "linear program for SOTA of zerosum game"
-        milp = Model("{self.PROBLEM.name} LEADER SOTA problem")
+        """linear program for leader agent of SOTA version of zerosum game"""
+        milp = Model("{self.PROBLEM.name} zerosum SOTA problem")
 
         #initialize linear program variables
-        DR = []
-        V = []
-        for action in self.ACTIONS[0]:
-            DR.append(milp.continuous_var(name=f"a{0}_{action}",ub=1,lb=0))
+        DR = milp.continuous_var_list(len(self.ACTIONS[0]),name = [f"a0_{i}" for i in self.ACTIONS[0]],ub=1,lb=0)
         V = milp.continuous_var(name="V",ub=float('inf'),lb=float('-inf'))
 
         # define objective function 
         milp.maximize(V)
 
         # define constraints 
-        for opponent_action in self.ACTIONS[1]:    
+        for follower_action in self.ACTIONS[1]:    
             rhs = 0   
 
             for agent_action, agent_action_probability in enumerate(DR):
-                rhs += payoff[self.PROBLEM.get_joint_action(agent_action,opponent_action)] * agent_action_probability
+                rhs += payoff[self.PROBLEM.get_joint_action(agent_action,follower_action)] * agent_action_probability
             
             milp.add_constraint(V<=rhs)
 
@@ -220,20 +213,17 @@ class Utilities:
         value = 0
         for agent_action_probability in DR:
             value += agent_action_probability
-        
         milp.add_constraint(value == 1)
 
         #solve and export 
         sol = milp.solve()
         milp.export_as_lp(f"zerosum_lp_{0}")
-
-        # print(f"Linear program solved :{(sol!=None)}")
         return milp.solution.get_objective_value(),milp.solution.get_values(DR)
 
 
     def zerosum_lp_follower(self,payoff):
-        "linear program for SOTA of zerosum game"
-        milp = Model("tiger problem")
+        """linear program for follower agent of SOTA version of zerosum game"""
+        milp = Model("{self.PROBLEM.name} zerosum SOTA problem")
 
         #initialize linear program variables
         DR = []

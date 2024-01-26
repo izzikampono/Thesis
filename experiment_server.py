@@ -34,59 +34,86 @@ def SOLVE(game,iterations):
     value_fn = game.value_function
     return policy,leader_values,follower_values,solve_time,
 
-def initialize_database():
+def initialize_storage():
     database = {"gametype":[],
                 "SOTA" : [],
                 "horizon": [],
                     "num_iterations" : [],
                     "average_time" : [],
                     "number_of_beliefs" : [],
-                    "leader_value_b0":[],
-                    "follower_value_b0":[],
-                    "density" : [],
-                    "gap":[],
+                    "ave_leader_value_b0":[],
+                    "ave_follower_value_b0":[]
+                    # "density" = []
+                    # "gap":[]
+                   
                     }
-    return database
+    policies = {"cooperative" : [] ,"zerosum":[],"stackelberg":[]}
+    policy_comparison_matrix = {"cooperative" : [] ,"zerosum":[],"stackelberg":[]}
+    return database,policies,policy_comparison_matrix
 
-def add_to_database(database,horizon,game_type,num_iterations,average_time,num_beliefs,V0_B0,V1_B0,SOTA,density):
+def add_to_database(database,horizon,game_type,num_iterations,average_time,num_beliefs,V0_B0,V1_B0,SOTA):
+    sota = {True:"State of the Art" , False:"Stackelberg"}
     database["gametype"].append(game_type)
     database["horizon"].append(horizon)
-    database["SOTA"].append(SOTA)
+    database["SOTA"].append(sota[SOTA])
     database["num_iterations"].append(num_iterations)
     database["average_time"].append(average_time)
     database["number_of_beliefs"].append(num_beliefs)
-    database["leader_value_b0"].append(V0_B0)
-    database["follower_value_b0"].append(V1_B0)
-    database["gap"].append(np.abs(V1_B0-V0_B0))
+    database["ave_leader_value_b0"].append(V0_B0)
+    database["ave_follower_value_b0"].append(V1_B0)
     # database["gap"].append(abs(V0_B0-V1_B0))
-    database["density"].append(density)
+    # database["density"].append(density)
     return
 
-database = initialize_database()
-density = 0.1
+def export_database(database):
+    database = pd.DataFrame(database)
+    path = "Results/"
+    file= f"{file_name}_{planning_horizon}_{num_iterations}"
+    database.to_csv(path+file, index=False)
+    return
+
+def initialize_problem():
+    problem = DecPOMDP(file_name,horizon = planning_horizon, num_players=1)
+    print("GAME DESCRIPTION :")
+    print(f"game size :\n\t|S| = {len(problem.states)}")
+    print(f"\t|Z| = {problem.num_joint_observations}\n\t|U| = {problem.num_joint_actions} with |U_i| = {problem.num_actions[0]}")
+    print(f"intiial_belief : {problem.b0}")
+    Classes.set_problem(problem)
+    return problem
+
+def export_policy_matrix(policy_comparison_matrix):
+    for gametype in ["cooperative","zerosum","stackelberg"]:
+        database = pd.DataFrame(policy_comparison_matrix[gametype],columns=["Strong F","Weak F"],index=["Strong L","Weak L"])
+        path = "policy_matrix/"
+        file= f"{file_name}_{gametype}_{horizon}_{num_iterations}"
+        database.to_csv(path+file, index=False)
+    return
 print("\n\nInitializing problem .... waiting ...")
-problem = DecPOMDP(file_name,horizon = planning_horizon, num_players=1)
-Classes.set_problem(problem)
-experiment_start_time = time.time()
-for game_type in ["cooperative","stackelberg","zerosum"]:
-    for sota_ in [True,False]:
-      
-        for horizon_ in range(1,planning_horizon+1):
-            print(f"\n===== GAME of type {game_type} WITH HORIZON {horizon_} , SOTA {sota_} =====")
-            game = Classes.PBVI(problem=problem,horizon=horizon_,density=0.1,gametype=game_type,sota=sota_)
+problem = initialize_problem()
+database,policies,policy_comparison_matrix = initialize_storage()
+
+for gametype in ["cooperative","zerosum","stackelberg"]:
+    for sota_ in [False,True]:
+        for horizon in range(1,planning_horizon+1):
+            print(f"\n============= {gametype} GAME WITH HORIZON {horizon} , SOTA {sota_} ===========")
+            #initialize game with fixed planning horizon
+            game = Classes.PBVI(problem=problem.set_horizon(horizon),horizon=horizon,density=0.1,gametype=gametype,sota=sota_)
+            #solve game with num_iterations
             policy,leader_values,follower_values, time_  = SOLVE(game,num_iterations)
-            num_beliefs = game.belief_space.belief_size()
+            #add values to database
             for iters in range(num_iterations):
-                add_to_database(database,horizon_,game_type,iters+1,time_,num_beliefs,leader_values[iters],follower_values[iters],sota_,density)
+                add_to_database(database,horizon,gametype,iters+1,time_,game.belief_space.belief_size(),leader_values[iters],follower_values[iters],sota_)
+        policies[gametype].append(policy)
+
+#compare SOTA an non-SOTA trategy of each gametype
+game.build_comparison_matrix(policy_comparison_matrix,policies)
+
+#export
 print("Calculations done... exporting to csv....")
-experiment_end_time = time.time()
-print("=============================END OF EXPERIMENT==========================================")
-print(f"Experiment finished in {experiment_end_time-experiment_start_time}")
-database = pd.DataFrame(database)
-file_name = f"{file_name}_{planning_horizon}_{num_iterations}.csv"
-path = "server_results/"
-database.to_csv(path+file_name, index=False)
-print(f"RESULTS WRITTEN AS : {file_name}:\n")
+export_database(database)
+export_policy_matrix(policy_comparison_matrix)
+
+
 
 
 

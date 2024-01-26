@@ -75,17 +75,21 @@ class BetaVector:
         return AlphaVector(DR,vectors[0],vectors[1],sota=sota2)
     
         
-    def payoff_function(self,belief):
+    def payoff_function(self,belief,game_type):
 
         payoffs = {}
         for agent in range(0,2):
             payoffs[agent] = np.zeros(len(CONSTANT.JOINT_ACTIONS))
+            # if statement for efficiency, since Linear Program only uses first player payoff for cooperative and zerosum games
+            if game_type!="stackelberg" and agent==CONSTANT.FOLLOWER:
+                payoffs[CONSTANT.FOLLOWER] = payoffs[CONSTANT.LEADER]
+                return payoffs
             for joint_action in CONSTANT.JOINT_ACTIONS:
                 payoffs[agent][joint_action] = np.linalg.norm(belief.value * self.two_d_vectors[agent][joint_action])
         return payoffs
     
     def solve(self,belief,game_type,sota):
-        payoffs = self.payoff_function(belief)
+        payoffs = self.payoff_function(belief,game_type)
         if sota==False :
             value , DR , DR0 , DR1 = utilities.LP(payoffs[0],payoffs[1])
         else:
@@ -103,20 +107,44 @@ class BetaVector:
 
 class PolicyTree:
     def __init__(self, data_):
-        self.data = []
+        self.DR = None
+        self.value = None
         if data_:
             self.data.append(data_)
         
         self.subtrees = {}
 
     def add_subtree(self,key,subtree):
-        self.subtrees[key] = subtree   
+        if subtree != PolicyTree(None):
+            self.subtrees[key] = subtree   
 
     def print_trees(self, indent=0):
         print(" " * indent + "Decision Rule: " +str(self.data[0]) + ", value: " +str(self.data[1]))
         for key, subtree in self.subtrees.items():
-            print("" * (indent + 2) + "└─ "+ f"belief : {key.value}")
-            subtree.print_trees(indent + 5)
+            if (subtree.value):
+                print(" " * (indent + 2) + "└─ "+ f"belief : {key.value}")
+                subtree.print_trees(indent + 5)
+        return
+    
+    def next(self,joint_action,joint_observation):
+        for belief in self.subtrees.keys():
+            if belief.action_label == joint_action and belief.observation_label==joint_observation:
+                return self.subtrees[belief]
+        return None
+    def max_DR(self,belief):
+        max = -np.inf
+        for belief_t,subtree in self.subtrees.items():
+            if np.array_equal(belief.value,belief_t.value) and subtree.value>max:
+                max = subtree.value
+                max_DR = subtree.DR 
+                branch = subtree
+        if max<=-np.inf:
+            print("no branch found")
+            return
+        self = branch
+        return max_DR
+        
+
     
         
 
@@ -179,7 +207,6 @@ class ValueFunction:
 
     def backup(self,belief,timestep,gametype):
         beta = self.create_beta_vector(belief,timestep,gametype)
-        # print(f"Beta at timestep {timestep}\nLeader:\n{beta.two_d_vectors[0]}\nFollower:\n{beta.two_d_vectors[1]}")
         value , alpha = beta.solve(belief,gametype,self.sota)
         self.add_alpha_vector(alpha,timestep)
 
@@ -208,7 +235,7 @@ class PBVI:
         self.belief_space = BeliefSpace(horizon,problem.b0,density)
         self.value_function = ValueFunction(horizon,self.belief_space,sota=self.sota)
 
-        self.policies = [PolicyTree(None),PolicyTree(None)]
+        self.policy = []
         self.gametype = gametype
         self.problem = problem
         self.horizon = horizon
@@ -225,36 +252,63 @@ class PBVI:
             print(f"\tbackup at timestep {timestep} done")
 
         print("\tbackward induction done")
+    
+    def extract_policies(self,belief_space):
+        self.policy.append(self.tree_extraction(self.belief_space.initial_belief,agent = 0,timestep = 0,belief_space = belief_space))
+        self.policy.append(self.tree_extraction(self.belief_space.initial_belief,agent = 1,timestep = 0,belief_space = belief_space))
+        print(f"policy extraction done")
+
+   
+    def DP(self, leader_policy, follower_policy,belief = None):
+        #check if theres a DR
+        if leader_policy==None or follower_policy==None:return 0
+
+        #if belief is NONE, we set it to initial belief
+        if not belief : belief =self.belief_space.initial_belief
+
+        #initialize value and reward
+        value = 0 
+        reward = CONSTANT.REWARDS[self.gametype][CONSTANT.LEADER]
+        #get reward component of value function by weighting reward with DR of both players and current belief
+        for state in CONSTANT.STATES:
+            for leader_action in CONSTANT.ACTIONS[CONSTANT.LEADER]:
+                for follower_action in CONSTANT.ACTIONS[CONSTANT.FOLLOWER]:
+                    joint_action = self.problem.get_joint_action(leader_action,follower_action)
+                    value += belief.value[state]*leader_policy.DR[leader_action]*follower_policy.DR[follower_action]*reward[joint_action][state]
+        #get future component of value function by getting optimal value of "next belief" weighted by probability of observation of subsequent "next belief"
+        for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
+            for leader_action in CONSTANT.ACTIONS[CONSTANT.LEADER]:
+                for follower_action in CONSTANT.ACTIONS[CONSTANT.FOLLOWER]:
+                    value+=utilities.observation_probability(joint_observation,belief,joint_action) * leader_policy.DR[leader_action] * follower_policy.DR[follower_action] * self.DP(leader_policy.next(leader_action,joint_observation),follower_policy.next(follower_action,joint_observation),belief.next_belief(joint_action,joint_observation))
+        return value
            
-    def solve(self,iterations,decay):
-        self.belief_space.expansion()
+    def solve(self,iterations,growth):
+        self.belief_space.reset()
         for _ in range(1,iterations+1):
             print(f"iteration : {_}")
+            self.belief_space.expansion()
             self.backward_induction()
-            self.density /= decay #hyperparameter
             leader_value , follower_value = self.value_function.get_values_initial_belief()
+            self.density *= growth #hyperparameter
             self.leader_b0_values.append(leader_value) 
             self.follower_b0_values.append(follower_value) 
         print(f"    extracting policy...")
         initial_belief = self.belief_space.get_inital_belief()
-        self.policies[0] = self.tree_extraction(initial_belief,agent=0,timestep = 0)    
-        self.policies[1] = self.tree_extraction(initial_belief,agent=1,timestep =0)  
-        print(f"    policy extraction done")
-
-        return self.policies ,  self.leader_b0_values,self.follower_b0_values
-      
-    def iteration(self,decay):
-        self.backward_induction()
-        self.density /= decay #hyperparameter
-        leader_value , follower_value = self.value_function.get_values_initial_belief()
-        self.leader_experiment_values.append(np.average(leader_value))
-        self.follower_experiment_values.append(np.average(follower_value))
-        initial_belief = self.belief_space.get_inital_belief()
-        self.policies[0] = self.tree_extraction(initial_belief,agent=0,timestep = 0)    
-        self.policies[1] = self.tree_extraction(initial_belief,agent=1,timestep =0)  
-        return self.leader_experiment_values,self.follower_experiment_values,self.policies 
-     
-    def tree_extraction(self,belief, agent,timestep):
+        self.extract_policies(self.belief_space)
+        return self.policy , self.leader_b0_values,self.follower_b0_values
+    
+    def build_comparison_matrix(self,policy_comparison_matrix,policies):
+        sota = False
+        for gametype in ["cooperative","zerosum","stackelberg"]:
+            strong_leader_strong_follower = policies[gametype][int(sota)][CONSTANT.LEADER].value
+            weak_leader_weak_follower = policies[gametype][int(not sota)][CONSTANT.LEADER].value
+            strong_leader_weak_follower = self.DP(leader_policy=policies[gametype][int(sota)][CONSTANT.LEADER],follower_policy=policies[gametype][int(not sota)][CONSTANT.FOLLOWER])
+            weak_leader_strong_follower = self.DP(leader_policy=policies[gametype][int(not sota)][CONSTANT.LEADER],follower_policy=policies[gametype][int(sota)][CONSTANT.FOLLOWER])
+            policy_comparison_matrix[gametype] = np.array([[strong_leader_strong_follower,strong_leader_weak_follower],[weak_leader_strong_follower,weak_leader_weak_follower]])
+        print("Calculated comparison matrix")
+        return
+    
+    def tree_extraction(self,belief, agent,timestep,belief_space):
         global utilities
         # edge case at last horizon
         if timestep > self.horizon : return PolicyTree(None)
@@ -286,11 +340,14 @@ class PBVI:
                             #get next belief of joint action and observation
                             belief_next = belief.next_belief(joint_action,joint_observation)
                             #create subtree for next belief
-                            if self.belief_space.distance(belief_next,timestep):
-                                subtree = self.tree_extraction(belief_next,agent,timestep+1)
-                                policy.add_subtree(belief_next,subtree)
-        policy.data.append(DR.individual[agent])
-        policy.data.append(max)
+                            # if belief_space.distance(belief_next,timestep):
+                            subtree = self.tree_extraction(belief_next,agent,timestep+1,belief_space)
+                            policy.add_subtree(belief_next,subtree)
+        
+        if max > -np.inf : 
+            policy.DR = DR.individual[agent]
+            policy.value = max
+
         return policy
     
 ############################################################################################################     
@@ -299,13 +356,23 @@ class BeliefSpace:
     def __init__(self,horizon,initial_belief,density):
         self.density = density
         self.belief_states = {} 
-        self.initial_belief=Belief(initial_belief,None,None)
+        if type(initial_belief)!=Belief:self.initial_belief=Belief(initial_belief,None,None)
+        else : self.initial_belief = initial_belief
         for timestep in range(horizon+1):
             self.belief_states[timestep] = []
         self.belief_states[0].append(self.initial_belief)
         self.horizon = horizon
+
     def get_inital_belief(self):
         return self.belief_states[0][0]
+    
+    def reset(self):
+        for timestep in range(self.horizon+1):
+            self.belief_states[timestep] = []
+        self.belief_states[0].append(self.initial_belief)
+        return
+
+
 
 
     def distance(self,belief,timestep):
@@ -355,32 +422,32 @@ class Belief:
         self.action_label = action_label
         self.observation_label = observation_label
 
-    def next_belief(self,joint_DR,joint_observation):
+    def next_belief(self,joint_action,joint_observation):
         """function to calculate next belief based on current belief, DR/joint action , and observation"""
         # returns the value of b1
         next_belief_value= np.zeros(len(CONSTANT.STATES))
 
         if type(joint_observation) != int :
-            joint_observation = self.PROBLEM.joint_observations.index(joint_observation)
+            joint_observation = CONSTANT.PROBLEM.joint_observations.index(joint_observation)
 
 
-        if type(joint_DR) == int: # if joint_DR enterred as a deterministic action 
+        if type(joint_action) == int: # if joint_DR enterred as a deterministic action 
             for next_state in CONSTANT.STATES:
-                next_belief_value[next_state]+= np.linalg.norm(self.value * CONSTANT.TRANSITION_FUNCTION[joint_DR][next_state]  * CONSTANT.OBSERVATION_FUNCTION[joint_DR][joint_observation])
+                next_belief_value[next_state]+= np.linalg.norm(self.value * CONSTANT.TRANSITION_FUNCTION[joint_action][next_state]  * CONSTANT.OBSERVATION_FUNCTION[joint_action][joint_observation])
 
         else:   # if joint_DR is a decision rule
             for next_state in CONSTANT.STATES:
                 value = 0
                 for joint_action in CONSTANT.JOINT_ACTIONS:
-                    value += self.value * joint_DR[joint_action] * CONSTANT.TRANSITION_FUNCTION[joint_action][next_state]  * CONSTANT.OBSERVATION_FUNCTION[joint_action][joint_observation]
+                    value += self.value * joint_action[joint_action] * CONSTANT.TRANSITION_FUNCTION[joint_action][next_state]  * CONSTANT.OBSERVATION_FUNCTION[joint_action][joint_observation]
                 next_belief_value[next_state]+=value
-
+        
         if np.sum(next_belief_value) ==0 :
-            return Belief(next_belief_value,joint_DR,joint_observation)
+            return Belief(next_belief_value,joint_action,joint_observation)
         next_belief_value = utilities.normalize(next_belief_value)
 
         if np.sum(next_belief_value)<= 1.001 and np.sum(next_belief_value)> 0.99999:
-            return  Belief(next_belief_value,joint_DR,joint_observation)
+            return  Belief(next_belief_value,joint_action,joint_observation)
         else:
             print("err0r : belief doesn not sum up to 1\n")
             print(f"current belief: \n{self.value}")
