@@ -69,8 +69,6 @@ def plots(database):
     for idx,gametype in enumerate(games):
         strong_leader_data = Strong_leader[Strong_leader["gametype"]==gametype]["leader_value"]
         weak_leader_data = Weak_leader[Weak_leader["gametype"]==gametype]["leader_value"]
-        print(strong_leader_data)
-        print(weak_leader_data)
         
         axs[idx].plot(range(len(strong_leader_data)),strong_leader_data, label='Strong Leader Strong Follower')
         axs[idx].plot(range(len(weak_leader_data)),weak_leader_data, label='Weak Leader Weak Leader')

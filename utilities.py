@@ -160,7 +160,12 @@ class Utilities:
         sol = milp.solve()
         milp.export_as_lp(f"Stackelberg_LP")
         # print(f"value solution = {milp.solution.get_objective_value()}")
-        return milp.solution.get_objective_value(),milp.solution.get_values(joint_DR), milp.solution.get_values(leader_DR), milp.solution.get_values(follower_DR)
+        value = milp.solution.get_objective_value()
+        joint_DR = milp.solution.get_values(joint_DR)
+        leader_DR = milp.solution.get_values(leader_DR) 
+        follower_DR = milp.solution.get_values(follower_DR)
+        milp.end()
+        return value, joint_DR,leader_DR, follower_DR
 
     def get_joint_DR(self,DR0,DR1):
         DR=np.zeros(len(self.JOINT_ACTIONS))
@@ -197,6 +202,8 @@ class Utilities:
     def zerosum_lp_leader(self,payoff):
         "linear program for SOTA of zerosum game"
         milp = Model("{self.PROBLEM.name} LEADER SOTA problem")
+        milp.parameters.threads=0
+
 
         #initialize linear program variables
         DR = []
@@ -236,6 +243,8 @@ class Utilities:
     def zerosum_lp_follower(self,payoff):
         "linear program for SOTA of zerosum game"
         milp = Model("tiger problem")
+        milp.parameters.threads=0
+
 
         #initialize linear program variables
         DR = []
@@ -267,9 +276,10 @@ class Utilities:
         #solve and export 
         sol = milp.solve()
         milp.export_as_lp(f"zerosum_lp_{1}")
-
-        # print(f"Linear program solved :{(sol!=None)}")
-        return milp.solution.get_objective_value(),milp.solution.get_values(DR)
+        value = milp.solution.get_objective_value()
+        DR= milp.solution.get_values(DR)
+        milp.end()
+        return value,DR
 
 
 

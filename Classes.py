@@ -232,7 +232,7 @@ class PBVI:
         self.belief_space = BeliefSpace(horizon,problem.b0,density)
         self.value_function = ValueFunction(horizon,self.belief_space,sota=self.sota)
 
-        self.policies = [[],[]]
+        self.policies = {0:[],1:[]}
         self.gametype = gametype
         self.problem = problem
         self.horizon = horizon
@@ -335,10 +335,10 @@ class PBVI:
     def build_comparison_matrix(self,policy_comparison_matrix,policies,gametype,iteration):
         sota = False
        
-        strong_leader_strong_follower = policies[gametype][int(sota)][iteration][CONSTANT.LEADER].value
-        weak_leader_weak_follower = policies[gametype][int(not sota)][iteration][CONSTANT.LEADER].value
-        strong_leader_weak_follower = self.DP(leader_policy = policies[gametype][int(sota)][iteration][CONSTANT.LEADER] , follower_policy = policies[gametype][int(not sota)][iteration][CONSTANT.FOLLOWER])
-        weak_leader_strong_follower = self.DP(leader_policy = policies[gametype][int(not sota)][iteration][CONSTANT.LEADER] , follower_policy = policies[gametype][int(sota)][iteration][CONSTANT.FOLLOWER])
+        strong_leader_strong_follower = policies[gametype][int(sota)][CONSTANT.LEADER][iteration].value
+        weak_leader_weak_follower = policies[gametype][int(not sota)][CONSTANT.LEADER][iteration].value
+        strong_leader_weak_follower = self.DP(leader_policy = policies[gametype][int(sota)][CONSTANT.LEADER][iteration] , follower_policy = policies[gametype][int(not sota)][CONSTANT.FOLLOWER][iteration])
+        weak_leader_strong_follower = self.DP(leader_policy = policies[gametype][int(not sota)][CONSTANT.LEADER][iteration], follower_policy = policies[gametype][int(sota)][CONSTANT.FOLLOWER][iteration])
         policy_comparison_matrix[gametype] = np.array([[strong_leader_strong_follower,strong_leader_weak_follower],[weak_leader_strong_follower,weak_leader_weak_follower]])
         print("Calculated comparison matrix")
         return
