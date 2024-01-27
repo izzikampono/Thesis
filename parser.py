@@ -189,7 +189,15 @@ def read_rewards(raw_list, states, actions, observations):
                         if len(fields) > 3:
                             for jz in match_item(fields[3], observations):
                                 if len(fields) > 4:
-                                    reward_mat[ja, s, nxt, jz] = float(fields[4])       
+                                    if len(fields)>5:
+                                        player = int(fields[4])
+                                        # print(f"test this : {float(fields[5])}")
+                                        if flag :
+                                            reward_mat = np.zeros((2,n_ja, len(states), len(states), n_jz))
+                                            flag = False
+                                        reward_mat[player,ja, s, nxt, jz] =float(fields[5])
+                                    else: 
+                                        reward_mat[ja, s, nxt, jz] = float(fields[4])       
                         else:
                             for jz, r in enumerate(read_field(lines[1])):
                                 reward_mat[ja, s, nxt, jz] = float(r)
