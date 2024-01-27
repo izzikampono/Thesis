@@ -20,12 +20,7 @@ else :
     print("not enough arguments")
     sys.exit()
 
-
-file_name = "dectiger"
-planning_horizon = 4
-num_iterations = 2
 games = ["cooperative","zerosum","stackelberg"]
-
 problem = DecPOMDP(file_name, 1,horizon=planning_horizon)
 Classes.set_problem(problem)
 
@@ -62,8 +57,10 @@ def SOLVE(game,database,horizon,gametype):
     return policy
 
 def plots(database):
-    Strong_leader = database[database["SOTA"]=="Stackelberg"][database["horizon"]==planning_horizon]
-    Weak_leader = database[database["SOTA"]!="Stackelberg"][database["horizon"]==planning_horizon]
+    Strong_leader = database[database["SOTA"]=="Stackelberg"]
+    Strong_leader = Strong_leader[Strong_leader["horizon"]==planning_horizon]
+    Weak_leader = database[database["SOTA"]!="Stackelberg"]
+    Weak_leader= Weak_leader[Weak_leader["horizon"]==planning_horizon]
 
     fig, axs = plt.subplots(len(games), figsize=(8, 6))
 
@@ -84,6 +81,7 @@ def plots(database):
     fig.savefig(file_path)
     plt.tight_layout()
     plt.show()
+    print("plots made and exported...")
     return
 
 def initialize_storage():
@@ -109,19 +107,21 @@ def export_policy_matrix(policy_comparison_matrix,gametype):
     path = "comparison_matrix/"
     filename = f"{file_name}_{gametype}_{planning_horizon}_{num_iterations}.csv"
     matrix.to_csv(path+filename)
+    return
 
 
 def export_database(database):
     path = "Results/"
     filename = f"{file_name}_{horizon}_experiment_results.csv"
     database.to_csv(path+filename, index=False)
+    print(f"file exported as {filename}")
 
 #==================================================================#
 # RUN EXPERIMENTS :
 database,policies,policy_comparison_matrix = initialize_storage()
 problem = DecPOMDP(file_name,1,horizon=planning_horizon)
 Classes.set_problem(problem)
-
+start_experiment_time = time.time()
 for gametype in ["cooperative","zerosum","stackelberg"]:
     for horizon in range(1,planning_horizon+1):
         for sota_ in [False,True]:
@@ -130,6 +130,9 @@ for gametype in ["cooperative","zerosum","stackelberg"]:
             policies[gametype][sota_] = SOLVE(game,database,horizon,gametype)
     game.build_comparison_matrix(policy_comparison_matrix,policies,gametype,iteration=num_iterations-1)
     export_policy_matrix(policy_comparison_matrix,gametype)
+    print("======= END OF EXPERIMENT =========")
+end_experiment_time = time.time()
+print(f"finished in {end_experiment_time-start_experiment_time} seconds")
 database = pd.DataFrame(database)
 export_database(database)
 plots(database)
