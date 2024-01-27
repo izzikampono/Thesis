@@ -2,10 +2,10 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=80
 #SBATCH --time=03:00:00
-#SBATCH --error=error_file_broadcastChannel.txt
-#SBATCH --job-name=broadcastChannel
+#SBATCH --error=error_file_dectiger.txt
+#SBATCH --job-name=dectiger
 #SBATCH --mem=25G
-#SBATCH --output=output_broadcastChannel.log
+#SBATCH --output=output_dectiger.log
 
 module purge
 module load Python/3.9.6-GCCcore-11.2.0
