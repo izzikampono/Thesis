@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --cpus-per-task=80
+#SBATCH --cpus-per-task=50
 #SBATCH --time=03:00:00
 #SBATCH --error=error_file_2generals.txt
 #SBATCH --job-name=2generals
-#SBATCH --mem=60G
+#SBATCH --mem=50G
 #SBATCH --output=output_2generals.log
 
 module purge

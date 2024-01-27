@@ -251,18 +251,20 @@ class PBVI:
     def solve(self,iterations,decay):
         belief_sizes = []
         density = []
+        value = []
         for _ in range(1,iterations+1):
             self.belief_space.reset()
             self.belief_space.expansion()
             print(f"iteration : {_}")
             self.backward_induction()
             initial_belief = self.belief_space.get_inital_belief()
-            self.policies[0].append(self.tree_extraction(initial_belief,agent=0,timestep = 0)) 
-            self.policies[1].append(self.tree_extraction(initial_belief,agent=1,timestep =0))
+            value.append(self.value_function.get_values_initial_belief())
             belief_sizes.append(self.belief_space.belief_size())
             density.append(self.belief_space.density)
             self.belief_space.density *= decay #hyperparameter
-        return self.policies,belief_sizes,density
+        self.policies[0] = self.tree_extraction(initial_belief,agent=0,timestep = 0)
+        self.policies[1] = self.tree_extraction(initial_belief,agent=1,timestep =0)
+        return self.policies,belief_sizes,density,value
     
     def DP(self, leader_policy, follower_policy,belief = None):
         #check if theres a DR
@@ -335,10 +337,10 @@ class PBVI:
     def build_comparison_matrix(self,policy_comparison_matrix,policies,gametype,iteration):
         sota = False
        
-        strong_leader_strong_follower = policies[gametype][int(sota)][CONSTANT.LEADER][iteration].value
-        weak_leader_weak_follower = policies[gametype][int(not sota)][CONSTANT.LEADER][iteration].value
-        strong_leader_weak_follower = self.DP(leader_policy = policies[gametype][int(sota)][CONSTANT.LEADER][iteration] , follower_policy = policies[gametype][int(not sota)][CONSTANT.FOLLOWER][iteration])
-        weak_leader_strong_follower = self.DP(leader_policy = policies[gametype][int(not sota)][CONSTANT.LEADER][iteration], follower_policy = policies[gametype][int(sota)][CONSTANT.FOLLOWER][iteration])
+        strong_leader_strong_follower = policies[gametype][int(sota)][CONSTANT.LEADER].value
+        weak_leader_weak_follower = policies[gametype][int(not sota)][CONSTANT.LEADER].value
+        strong_leader_weak_follower = self.DP(leader_policy = policies[gametype][int(sota)][CONSTANT.LEADER] , follower_policy = policies[gametype][int(not sota)][CONSTANT.FOLLOWER])
+        weak_leader_strong_follower = self.DP(leader_policy = policies[gametype][int(not sota)][CONSTANT.LEADER], follower_policy = policies[gametype][int(sota)][CONSTANT.FOLLOWER])
         policy_comparison_matrix[gametype] = np.array([[strong_leader_strong_follower,strong_leader_weak_follower],[weak_leader_strong_follower,weak_leader_weak_follower]])
         print("Calculated comparison matrix")
         return
