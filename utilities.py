@@ -10,6 +10,8 @@ import cplex
 import sys
 import subprocess
 from constant import Constants
+import gc
+gc.enable()
 
 class Utilities:
     def __init__(self,constant:Constants) :
@@ -104,6 +106,7 @@ class Utilities:
     def LP(self,Q1,Q2):
     
         milp = Model(f"{self.PROBLEM.name} problem")
+        milp.parameters.threads=0
         leader_DR = milp.continuous_var_list(len(self.ACTIONS[0]),name = [f"a0_{i}" for i in self.ACTIONS[1]],ub=1,lb=0)
         follower_DR = milp.binary_var_list(len(self.ACTIONS[1]), name = [f"a1_{i}" for i in self.ACTIONS[0]])
         joint_DR = milp.continuous_var_list(len(self.JOINT_ACTIONS),name  = [f"aj_{i}" for i in self.JOINT_ACTIONS],ub=1,lb=0)

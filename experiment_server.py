@@ -6,6 +6,8 @@ import Classes
 import time
 import os
 import sys
+import gc
+gc.enable()
 # examplus usage :
 # python3 experiment_server.py problem=dectiger horizon=3 iter=3 
 
