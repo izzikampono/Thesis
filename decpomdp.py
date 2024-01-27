@@ -1,7 +1,8 @@
 import numpy as np
 import itertools, os
 from parser import read_file, read_count_or_enum, read_field, read_start, read_items, read_transition, read_observation, read_reward,read_rewards
-
+import gc
+gc.enable()
 class DecPOMDP:
     def __init__(self, problem, num_players, horizon, observation_histories = False, truncation = np.inf):
         self.name = problem

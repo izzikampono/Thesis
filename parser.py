@@ -1,7 +1,8 @@
 import operator
 from functools import reduce
 import numpy as np
-
+import gc
+gc.enable()
 def prod(iterable):
     return reduce(operator.mul, iterable, 1)
 
