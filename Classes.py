@@ -283,9 +283,9 @@ class PBVI:
         return value
            
     def solve(self,iterations,growth):
-        self.belief_space.reset()
         for _ in range(1,iterations+1):
             print(f"iteration : {_}")
+            self.belief_space.reset()
             self.belief_space.expansion()
             self.backward_induction()
             leader_value , follower_value = self.value_function.get_values_initial_belief()

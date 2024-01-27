@@ -51,7 +51,7 @@ def initialize_storage():
     policy_comparison_matrix = {"cooperative" : [] ,"zerosum":[],"stackelberg":[]}
     return database,policies,policy_comparison_matrix
 
-def add_to_database(database,horizon,game_type,num_iterations,average_time,num_beliefs,V0_B0,V1_B0,SOTA):
+def add_to_database(database,horizon,SOTA,game_type,num_iterations,average_time,num_beliefs,V0_B0,V1_B0,gap,density):
     sota = {True:"State of the Art" , False:"Stackelberg"}
     database["gametype"].append(game_type)
     database["horizon"].append(horizon)
@@ -61,8 +61,8 @@ def add_to_database(database,horizon,game_type,num_iterations,average_time,num_b
     database["number_of_beliefs"].append(num_beliefs)
     database["ave_leader_value_b0"].append(V0_B0)
     database["ave_follower_value_b0"].append(V1_B0)
-    # database["gap"].append(abs(V0_B0-V1_B0))
-    # database["density"].append(density)
+    database["gap"].append(abs(V0_B0-V1_B0))
+    database["density"].append(density)
     return
 
 def export_database(database):
@@ -93,6 +93,7 @@ problem = initialize_problem()
 database,policies,policy_comparison_matrix = initialize_storage()
 
 for gametype in ["cooperative","zerosum","stackelberg"]:
+    density = 0.1
     for sota_ in [False,True]:
         for horizon in range(1,planning_horizon+1):
             print(f"\n============= {gametype} GAME WITH HORIZON {horizon} , SOTA {sota_} ===========")
@@ -102,7 +103,7 @@ for gametype in ["cooperative","zerosum","stackelberg"]:
             policy,leader_values,follower_values, time_  = SOLVE(game,num_iterations)
             #add values to database
             for iters in range(num_iterations):
-                add_to_database(database,horizon,gametype,iters+1,time_,game.belief_space.belief_size(),leader_values[iters],follower_values[iters],sota_)
+                add_to_database(database,horizon,sota_,gametype,iters+1,time_,game.belief_space.belief_size(),leader_values[iters],follower_values[iters],gap,density)
         policies[gametype].append(policy)
 
 #compare SOTA an non-SOTA trategy of each gametype
