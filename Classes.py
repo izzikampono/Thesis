@@ -283,7 +283,8 @@ class PBVI:
                     value+=utilities.observation_probability(joint_observation,belief,joint_action) * leader_policy.DR[leader_action] * follower_policy.DR[follower_action] * self.DP(leader_policy.next(leader_action,joint_observation),follower_policy.next(follower_action,joint_observation),belief.next_belief(joint_action,joint_observation))
         return value
            
-    def solve(self,iterations,growth):
+    def solve(self,iterations):
+        belief_sizes = []
         for _ in range(1,iterations+1):
             print(f"iteration : {_}")
             self.belief_space.reset()
@@ -292,11 +293,12 @@ class PBVI:
             leader_value , follower_value = self.value_function.get_values_initial_belief()
             self.density *= self.growth #hyperparameter
             self.leader_b0_values.append(leader_value) 
-            self.follower_b0_values.append(follower_value) 
+            self.follower_b0_values.append(follower_value)
+            belief_sizes.append(self.belief_space.belief_size()) 
         print(f"    extracting policy...")
         initial_belief = self.belief_space.get_inital_belief()
         self.extract_policies(self.belief_space)
-        return self.policy , self.leader_b0_values,self.follower_b0_values
+        return self.policy , self.leader_b0_values,self.follower_b0_values, belief_sizes
     
     def build_comparison_matrix(self,policy_comparison_matrix,policies):
         sota = False

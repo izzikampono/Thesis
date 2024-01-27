@@ -28,11 +28,10 @@ else :
 # solve
 def SOLVE(game,iterations):
     start_time = time.time()
-    policy,leader_values,follower_values = game.solve(iterations,0.9)
+    policy,leader_values,follower_values,belief_sizes = game.solve(iterations)
     end_time = time.time()
     solve_time = end_time - start_time
-    value_fn = game.value_function
-    return policy,leader_values,follower_values,solve_time,
+    return policy,leader_values,follower_values,solve_time,belief_sizes
 
 def initialize_storage():
     database = {"gametype":[],
@@ -67,8 +66,8 @@ def add_to_database(database,horizon,SOTA,game_type,num_iterations,average_time,
 
 def export_database(database):
     database = pd.DataFrame(database)
-    path = "Results/"
-    file= f"{file_name}_{planning_horizon}_{num_iterations}"
+    path = "server_results/"
+    file= f"{file_name}_{planning_horizon}_{num_iterations}.csv"
     database.to_csv(path+file, index=False)
     return
 
@@ -85,7 +84,7 @@ def export_policy_matrix(policy_comparison_matrix):
     for gametype in ["cooperative","zerosum","stackelberg"]:
         database = pd.DataFrame(policy_comparison_matrix[gametype],columns=["Strong F","Weak F"],index=["Strong L","Weak L"])
         path = "policy_matrix/"
-        file= f"{file_name}_{gametype}_{horizon}_{num_iterations}"
+        file= f"{file_name}_{gametype}_{horizon}_{num_iterations}.csv"
         database.to_csv(path+file, index=False)
     return
 print("\n\nInitializing problem .... waiting ...")
@@ -101,10 +100,12 @@ for gametype in ["cooperative","zerosum","stackelberg"]:
             #initialize game with fixed planning horizon
             game = Classes.PBVI(problem=problem.set_horizon(horizon),horizon=horizon,density=density,growth=growth,gametype=gametype,sota=sota_)
             #solve game with num_iterations
-            policy,leader_values,follower_values, time_  = SOLVE(game,num_iterations)
+            policy,leader_values,follower_values, time_,belief_sizes  = SOLVE(game,num_iterations)
             #add values to database
             for iters in range(num_iterations):
-                add_to_database(database,horizon,sota_,gametype,iters+1,time_,game.belief_space.belief_size(),leader_values[iters],follower_values[iters],np.abs(leader_values[iters]-follower_values[iters]),density*growth)
+                add_to_database(database,horizon,sota_,gametype,iters+1,time_,belief_sizes[iters],leader_values[iters],follower_values[iters],np.abs(leader_values[iters]-follower_values[iters]),density)
+                density = density*growth
+
         policies[gametype].append(policy)
 
 #compare SOTA an non-SOTA trategy of each gametype
