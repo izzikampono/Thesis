@@ -22,6 +22,7 @@ else :
     print("not enough arguments")
     sys.exit()
 
+print("Initializing problem...")
 games = ["cooperative","zerosum","stackelberg"]
 problem = DecPOMDP(file_name, 1,horizon=planning_horizon)
 Classes.set_problem(problem)
@@ -50,12 +51,12 @@ def add_to_database(database,horizon,game_type,num_iterations,average_time,num_b
 # solve
 def SOLVE(game,database,horizon,gametype):
     start_time = time.time()
-    policy , belief_size , densities = game.solve(num_iterations,0.6)
+    policy , belief_size , densities,values = game.solve(num_iterations,0.6)
     end_time = time.time()
     solve_time = end_time - start_time
     for iterations in range(num_iterations):
-        value0,value1= policy[0][iterations].value , policy[1][iterations].value
-        add_to_database(database,horizon,gametype,iterations,solve_time,belief_size[iterations],value0,value1,sota_,densities[iterations],np.abs(value1-value0))
+        # value0,value1= policy[0][iterations].value , policy[1][iterations].value
+        add_to_database(database,horizon,gametype,iterations,solve_time,belief_size[iterations],values[iterations][0],values[iterations][1],sota_,densities[iterations],np.abs(values[iterations][0]-values[iterations][1]))
     return policy
 
 def plots(database):

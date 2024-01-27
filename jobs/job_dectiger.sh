@@ -4,7 +4,7 @@
 #SBATCH --time=03:00:00
 #SBATCH --error=error_file_dectiger.txt
 #SBATCH --job-name=dectiger
-#SBATCH --mem=50G
+#SBATCH --mem=80G
 #SBATCH --output=output_dectiger.log
 
 module purge

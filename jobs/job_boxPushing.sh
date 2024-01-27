@@ -4,7 +4,7 @@
 #SBATCH --time=03:00:00
 #SBATCH --error=error_file_boxPushing.txt
 #SBATCH --job-name=boxPushing
-#SBATCH --mem=60G
+#SBATCH --mem=70G
 #SBATCH --output=output_boxPushing.log
 
 module purge

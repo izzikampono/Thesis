@@ -4,7 +4,7 @@
 #SBATCH --time=03:00:00
 #SBATCH --error=error_file_wirelessDelay.txt
 #SBATCH --job-name=wirelessDelay
-#SBATCH --mem=10G
+#SBATCH --mem=80G
 #SBATCH --output=output_wirelessDelay.log
 
 module purge

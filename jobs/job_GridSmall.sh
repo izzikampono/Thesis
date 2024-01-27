@@ -4,7 +4,7 @@
 #SBATCH --time=03:00:00
 #SBATCH --error=error_file_GridSmall.txt
 #SBATCH --job-name=GridSmall_"$2"
-#SBATCH --mem=60G
+#SBATCH --mem=80G
 #SBATCH --output=output_GridSmall.log
 
 module purge

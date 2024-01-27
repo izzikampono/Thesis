@@ -4,7 +4,7 @@
 #SBATCH --time=03:00:00
 #SBATCH --error=error_file_recycling.txt
 #SBATCH --job-name=recycling
-#SBATCH --mem=16G
+#SBATCH --mem=80G
 #SBATCH --output=output_recycling.log
 
 module purge

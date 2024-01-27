@@ -4,7 +4,7 @@
 #SBATCH --time=03:00:00
 #SBATCH --error=error_file_2generals.txt
 #SBATCH --job-name=2generals
-#SBATCH --mem=50G
+#SBATCH --mem=70G
 #SBATCH --output=output_2generals.log
 
 module purge

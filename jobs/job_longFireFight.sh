@@ -4,7 +4,7 @@
 #SBATCH --time=08:00:00
 #SBATCH --error=error_file_longFireFight.txt
 #SBATCH --job-name=longFireFight_"$2"
-#SBATCH --mem=50G
+#SBATCH --mem=80G
 #SBATCH --output=output_longFireFight.log
 
 module purge
