@@ -42,9 +42,9 @@ def initialize_storage():
                     "average_time" : [],
                     "number_of_beliefs" : [],
                     "ave_leader_value_b0":[],
-                    "ave_follower_value_b0":[]
-                    # "density" = []
-                    # "gap":[]
+                    "ave_follower_value_b0":[],
+                    "density" : [],
+                    "gap":[]
                    
                     }
     policies = {"cooperative" : [] ,"zerosum":[],"stackelberg":[]}
@@ -93,17 +93,18 @@ problem = initialize_problem()
 database,policies,policy_comparison_matrix = initialize_storage()
 
 for gametype in ["cooperative","zerosum","stackelberg"]:
-    density = 0.1
+    growth = 1.5
     for sota_ in [False,True]:
         for horizon in range(1,planning_horizon+1):
+            density = 0.2
             print(f"\n============= {gametype} GAME WITH HORIZON {horizon} , SOTA {sota_} ===========")
             #initialize game with fixed planning horizon
-            game = Classes.PBVI(problem=problem.set_horizon(horizon),horizon=horizon,density=0.1,gametype=gametype,sota=sota_)
+            game = Classes.PBVI(problem=problem.set_horizon(horizon),horizon=horizon,density=density,growth=growth,gametype=gametype,sota=sota_)
             #solve game with num_iterations
             policy,leader_values,follower_values, time_  = SOLVE(game,num_iterations)
             #add values to database
             for iters in range(num_iterations):
-                add_to_database(database,horizon,sota_,gametype,iters+1,time_,game.belief_space.belief_size(),leader_values[iters],follower_values[iters],gap,density)
+                add_to_database(database,horizon,sota_,gametype,iters+1,time_,game.belief_space.belief_size(),leader_values[iters],follower_values[iters],np.abs(leader_values[iters]-follower_values[iters]),density*growth)
         policies[gametype].append(policy)
 
 #compare SOTA an non-SOTA trategy of each gametype

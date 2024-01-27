@@ -229,7 +229,7 @@ class ValueFunction:
 ################################################################################################
 
 class PBVI:
-    def __init__(self,problem,horizon,density,gametype,sota=False):
+    def __init__(self,problem,horizon,density,growth,gametype,sota=False):
         set_problem(problem)
         self.sota = sota
         self.belief_space = BeliefSpace(horizon,problem.b0,density)
@@ -240,6 +240,7 @@ class PBVI:
         self.problem = problem
         self.horizon = horizon
         self.density = density
+        self.growth = growth
 
         self.leader_b0_values = []
         self.follower_b0_values = []
@@ -289,7 +290,7 @@ class PBVI:
             self.belief_space.expansion()
             self.backward_induction()
             leader_value , follower_value = self.value_function.get_values_initial_belief()
-            self.density *= growth #hyperparameter
+            self.density *= self.growth #hyperparameter
             self.leader_b0_values.append(leader_value) 
             self.follower_b0_values.append(follower_value) 
         print(f"    extracting policy...")
