@@ -121,8 +121,6 @@ def export_database(database):
 #==================================================================#
 # RUN EXPERIMENTS :
 database,policies,policy_comparison_matrix = initialize_storage()
-problem = DecPOMDP(file_name,1,horizon=planning_horizon)
-Classes.set_problem(problem)
 start_experiment_time = time.time()
 for gametype in ["cooperative","zerosum","stackelberg"]:
     for horizon in range(1,planning_horizon+1):
