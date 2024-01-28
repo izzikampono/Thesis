@@ -53,7 +53,7 @@ class AlphaVector:
             reward = CONSTANT.REWARDS[game_type][agent]
             two_d_vectors[agent] = np.zeros((len(CONSTANT.JOINT_ACTIONS),(len(CONSTANT.STATES))))
             # To improve efficiency in the cases of zerosum and cooperative games, we only need the first player payoffs, so we can skip the second player payoffs and provide the same for both players.  
-            if game_type!="stackelberg" and agent==CONSTANT.FOLLOWER and self.sota==True :
+            if game_type=="cooperative" and agent==CONSTANT.FOLLOWER and self.sota==True :
                 two_d_vectors[agent]=two_d_vectors[CONSTANT.LEADER]
                 return BetaVector(two_d_vectors[0],two_d_vectors[1])
                 
@@ -269,6 +269,7 @@ class PBVI:
     def DP(self, leader_policy, follower_policy,belief = None):
         #check if theres a DR
         if leader_policy is None or follower_policy is None:return 0
+        if leader_policy.DR is None or follower_policy.DR is None : return 0
         #if belief is NONE, we set it to initial belief
         if not belief : belief =self.belief_space.initial_belief
 
@@ -357,6 +358,8 @@ class BeliefSpace:
             self.belief_states[timestep] = []
         self.belief_states[0].append(self.initial_belief)
         self.horizon = horizon
+        self.limit = 100
+
     def get_inital_belief(self):
         return self.belief_states[0][0]
     def reset(self):
@@ -379,7 +382,6 @@ class BeliefSpace:
     def get_closest_belief(self,belief,timestep):
         """ returns belief state at timestep t that is closest in distance to the input belief """
         max = -np.inf
-        # random.sample(beliefs_t, len(beliefs_t))
         for belief_t in self.belief_states[timestep].keys():
             distance = np.abs(np.linalg.norm(np.array(belief.value) - np.array(belief_t.value)))
             if distance<=max: 
@@ -402,9 +404,12 @@ class BeliefSpace:
                 for joint_action in CONSTANT.JOINT_ACTIONS:
                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
                         belief = previous_belief.next_belief(joint_action,joint_observation)
-                        if self.distance(belief,timestep):
+                        if self.distance(belief,timestep) and self.belief_size()<self.limit:
                             self.belief_states[timestep].append(belief)
                             # print(f"belief point added at timestep {timestep}: {belief}")
+                        if self.belief_size()>self.limit:
+                            print("belief space limit reached, no further expansion will be done")
+                            break
         print("\tbelief expansion done")  
     
          
@@ -414,6 +419,7 @@ class Belief:
         self.value = value 
         self.action_label = action_label
         self.observation_label = observation_label
+     
 
     def next_belief(self,joint_DR,joint_observation):
         """function to calculate next belief based on current belief, DR/joint action , and observation"""

@@ -64,7 +64,7 @@ def plots(database):
     Weak_leader = database[database["SOTA"]!="Stackelberg"]
     Weak_leader= Weak_leader[Weak_leader["horizon"]==planning_horizon]
 
-    fig, axs = plt.subplots(len(games), figsize=(10, 8))
+    fig, axs = plt.subplots(len(games), figsize=(10, 12),constrained_layout=True)
 
     for idx,gametype in enumerate(games):
         strong_leader_data = Strong_leader[Strong_leader["gametype"]==gametype]["leader_value"]
@@ -79,7 +79,7 @@ def plots(database):
     # plt.title("Results of PBVI algorithm for {file_name}")
     file_path = f'plots/result_{file_name}_{planning_horizon}_{num_iterations}.png'
     fig.savefig(file_path)
-    plt.tight_layout()
+    plt.subplots_adjust(top=0.5,bottom=0.4)
     plt.show()
     print("plots made and exported...")
     return

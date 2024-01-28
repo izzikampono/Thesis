@@ -197,6 +197,28 @@ class Utilities:
             DR0 = np.identity(len(self.ACTIONS[0]))[action_0]
             DR1 = np.identity(len(self.ACTIONS[1]))[action_1]
             return max,DR_joint,DR0,DR1
+    # def LP_zerosum2(self,payoff):
+    #     milp = Model("{self.PROBLEM.name} LEADER SOTA problem")
+    #     milp.parameters.threads=0
+
+
+    #     #initialize linear program variables
+    #     DR = []
+    #     for action in self.ACTIONS[0]:
+    #         DR.append(milp.continuous_var(name=f"a{0}_{action}",ub=1,lb=0))
+    #     V = milp.continuous_var(name="V",ub=float('inf'),lb=float('-inf'))
+    #     milp.maximize(V)
+
+    #     # define constraints 
+    #                 value+=agent_action_probability
+    #                 rhs += payoff[joint_action] * agent_action_probability
+    #             milp.add_constraint(V<=rhs)
+    #         milp.add_constraint(value == 1)
+    #     #solve and export 
+    #     sol = milp.solve()
+    #     milp.export_as_lp("SOTA_zerosum_tigerProblem_joint_LP")
+    #     print(f"Linear program solved :{(sol!=None)}")
+    #     return milp.solution.get_objective_value(),milp.solution.get_values(DR[0]),milp.solution.get_values(DR[1])
 
 
     def zerosum_lp_leader(self,payoff):
