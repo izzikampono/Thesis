@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from decpomdp import DecPOMDP
 import Classes
 import time
-import os
 import sys
 import gc
 gc.enable()
@@ -65,7 +64,7 @@ def plots(database):
     Weak_leader = database[database["SOTA"]!="Stackelberg"]
     Weak_leader= Weak_leader[Weak_leader["horizon"]==planning_horizon]
 
-    fig, axs = plt.subplots(len(games), figsize=(8, 6))
+    fig, axs = plt.subplots(len(games), figsize=(10, 8))
 
     for idx,gametype in enumerate(games):
         strong_leader_data = Strong_leader[Strong_leader["gametype"]==gametype]["leader_value"]
