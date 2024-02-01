@@ -18,7 +18,6 @@ if [ $# -lt 3 ]; then
     exit 1
 fi
 source /scratch/s3918343/venvs/thesis/bin/activate
-module load CPLEX/22.1.1-GCCcore-11.2.0
 pip install --upgrade pip
 pip install --upgrade wheel
 pip install -r requirements.txt

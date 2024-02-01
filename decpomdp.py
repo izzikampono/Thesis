@@ -1,10 +1,11 @@
 import numpy as np
+import random
+import sys
 import itertools, os
 from parser import read_file, read_count_or_enum, read_field, read_start, read_items, read_transition, read_observation, read_reward,read_rewards
-import gc
-gc.enable()
+
 class DecPOMDP:
-    def __init__(self, problem, num_players, horizon, observation_histories = False, truncation = np.inf):
+    def __init__(self, problem, horizon, observation_histories = False, truncation = np.inf):
         self.name = problem
         self.horizon = horizon
         self.observation_histories = observation_histories
@@ -13,8 +14,7 @@ class DecPOMDP:
         raw_data = read_file(problem)
         self.agents = read_count_or_enum(raw_data["agents"][0], "agent")
         self.num_agents = len(self.agents)
-        self.num_players = num_players
-        self.discount = 1.#float(raw_data["discount"][0])
+        self.discount = 1.0
         self.val_type = read_field(raw_data["values"][0])[0]
         self.states = read_count_or_enum(raw_data["states"][0], "s")
         self.num_states = len(self.states)
@@ -27,23 +27,15 @@ class DecPOMDP:
         self.num_observations = [len(self.observations[a]) for a in range(self.num_agents)]
         self.joint_observations = list(itertools.product(*self.observations))
         self.num_joint_observations = len(self.joint_observations)
-        self.all_histories = [self._generate_all_histories(t) for t in range(self.horizon)]
+        # self.all_histories = [self._generate_all_histories(t) for t in range(self.horizon)]
         self.transition_fn = read_transition(raw_data["T"], self.states, self.actions)
         self.observation_fn = read_observation(raw_data["O"], self.states, self.actions, self.observations)
         self.reward_fn = read_rewards(raw_data["R"], self.states, self.actions, self.observations)
         self.reward_fn_sa = np.zeros((self.num_joint_actions, self.num_states))
-        if self.num_players > 1:
-            self.reward_fn_sa = np.zeros((self.num_players,self.num_joint_actions, self.num_states))
-            for i in range(num_players):
-                for ja in range(self.num_joint_actions):
-                    for s in range(self.num_states):
-                        self.reward_fn_sa[i,ja, s] = sum([self.reward_fn[i,ja, s, s1, jz] * self.transition_fn[ja, s, s1] * self.observation_fn[ja, s1, jz] for s1 in range(self.num_states) for jz in range(self.num_joint_observations)])
+        for ja in range(self.num_joint_actions):
+            for s in range(self.num_states):
+                self.reward_fn_sa[ja, s] = sum([self.reward_fn[ja, s, s1, jz] * self.transition_fn[ja, s, s1] * self.observation_fn[ja, s1, jz] for s1 in range(self.num_states) for jz in range(self.num_joint_observations)])    
 
-        else:
-            for ja in range(self.num_joint_actions):
-                for s in range(self.num_states):
-                    self.reward_fn_sa[ja, s] = sum([self.reward_fn[ja, s, s1, jz] * self.transition_fn[ja, s, s1] * self.observation_fn[ja, s1, jz] for s1 in range(self.num_states) for jz in range(self.num_joint_observations)])
-    
         self.action_dictionary={}
         n=0
         for idx1,u1 in enumerate(self.actions[0]):
@@ -52,6 +44,23 @@ class DecPOMDP:
                 n+=1
 
         self.action_dict = dict((val, key) for key, val in self.action_dictionary.items())
+        self.REWARDS = { "cooperative" : [self.reward_fn_sa,self.reward_fn_sa],
+                    "zerosum" : [self.reward_fn_sa,self.reward_fn_sa*-1],
+                    "stackelberg" :[self.reward_fn_sa,self.follower_stackelberg_reward()]
+                    }
+
+   
+    
+    def follower_stackelberg_reward(self):
+        seed_value = 42
+        random.seed(seed_value)
+        stackelberg_follower_reward = np.zeros(self.reward_fn_sa.shape)
+        min_NUM = int(min([min(row)for row in self.reward_fn_sa]))
+        max_NUM = int(max([max(row) for row in self.reward_fn_sa]))
+        for joint_action in range(self.num_joint_actions):
+            for state in range(self.num_states):
+                stackelberg_follower_reward[joint_action][state]+=random.randint(min_NUM, max_NUM)
+        return stackelberg_follower_reward
 
     def get_joint_action(self,u1,u2):
         return self.action_dictionary[f"{u1}{u2}"]
@@ -70,9 +79,8 @@ class DecPOMDP:
         observation = self.joint_observations[np.random.choice(self.num_joint_observations, p = self.observation_fn[self.joint_actions.index(action), self.states.index(self.state)])]
         reward = self.reward_fn[self.joint_actions.index(action), self.states.index(old_state), self.states.index(self.state), self.joint_observations.index(observation)]
         self.n_steps += 1
-
-
         return observation, reward, (self.n_steps >= self.horizon), {}
+    
     def step_isolate(self,action,obs):
         action = self.joint_actions[action]
         assert action in self.joint_actions

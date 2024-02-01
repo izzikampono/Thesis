@@ -1,5 +1,0 @@
-gametype,SOTA,horizon,num_iterations,average_time,number_of_beliefs,ave_leader_value_b0,ave_follower_value_b0
-zerosum,Stackelberg,1,2,0.1252138614654541,4,[-88.22274983811785],[88.22274983811785]
-zerosum,State of the Art,1,2,0.1029202938079834,4,[-88.22274983811785],[-88.22274983811785]
-stackelberg,Stackelberg,1,2,0.057044029235839844,4,[3.468480039267017],[-78.47541939354277]
-stackelberg,State of the Art,1,2,0.05883598327636719,4,[2.4107554144557923],[-52.611111111111114]
