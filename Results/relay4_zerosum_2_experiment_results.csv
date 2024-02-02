@@ -1,5 +1,0 @@
-gametype,SOTA,horizon,num_iterations,average_time,number_of_beliefs,leader_value_b0,follower_value_b0
-zerosum,False,1,2,0.26070618629455566,6,[-1.9999999999999998],[50.99999999999999]
-zerosum,False,2,2,1.8304338455200195,22,[-2.9999999999999996],[51.99999999999999]
-zerosum,True,1,2,0.23826003074645996,6,[-2.0],[-2.0]
-zerosum,True,2,2,2.1612441539764404,22,[-3.0],[-3.0]
