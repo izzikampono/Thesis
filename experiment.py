@@ -75,7 +75,7 @@ for game_type in ["cooperative","stackelberg","zerosum"]:
             game = Classes.PBVI(problem=problem,horizon=horizon_,density=0.1,gametype=game_type,sota=sota_)
             policy, time_ , value_fn = SOLVE(game)
             num_beliefs = game.belief_space.belief_size()
-            value0,value1= value_fn.get_values_at_belief()
+            value0,value1= value_fn.get_max_plane_values_at_belief()
             add_to_database(database,horizon_,game_type,2,time_,num_beliefs,value0,value1,sota_)
 
 database = pd.DataFrame(database)
