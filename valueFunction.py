@@ -81,12 +81,18 @@ class ValueFunction:
 
         #initialize beta and choose appropriate reward
         two_d_vectors = {}
-        two_d_vectors[0] = np.zeros((len(CONSTANT.STATES),len(CONSTANT.JOINT_ACTIONS)))
-        two_d_vectors[1] = np.zeros((len(CONSTANT.STATES),len(CONSTANT.JOINT_ACTIONS)))
         reward = CONSTANT.REWARDS[game_type]
         belief = self.belief_space.get_belief(belief_id)
+
         #for each agent calculate Beta(belief,state,joint_action) = Reward(state,joint_action) + \sum_{joint_observation} \sum_{next_state} TRANSITION MATRIX(state,next_state,joint_action,joint_observation) * V_{t+1}(T(belief,joint_action,joint_observation))[next_state]
         for agent in range(0,2):
+            two_d_vectors[agent] = np.zeros((len(CONSTANT.STATES),len(CONSTANT.JOINT_ACTIONS)))
+
+            if game_type=="stackelberg" and self.sota == True and agent==1 :
+                two_d_vectors[1] = self.get_blind_beta()
+                return BetaVector(two_d_vectors[0],two_d_vectors[0],self.problem)
+
+
             for state in CONSTANT.STATES:
                 for joint_action in CONSTANT.JOINT_ACTIONS:
                     two_d_vectors[agent][state][joint_action] = reward[agent][joint_action][state]
@@ -97,15 +103,18 @@ class ValueFunction:
                             for next_state in CONSTANT.STATES:
                                 two_d_vectors[agent][state][joint_action] += CONSTANT.TRANSITION_FUNCTION[joint_action][state][next_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][state][joint_observation] *  self.point_value_fn[timestep+1][next_belief_id].vectors[agent][next_state]
         return BetaVector(two_d_vectors[0],two_d_vectors[1],self.problem)
+    
     def max_plane_beta(self,alpha_mappings,game_type):
         global CONSTANT
         two_d_vectors = {}
         reward = self.problem.REWARDS[game_type]
 
+
         for agent in range(0,2):
             two_d_vectors[agent] = np.zeros((len(CONSTANT.STATES),len(CONSTANT.JOINT_ACTIONS)))
             
-            if game_type=="cooperative" and agent==1 :
+            if game_type=="stackelberg" and self.sota == True and agent==1 :
+                two_d_vectors[1] = self.get_blind_beta()
                 return BetaVector(two_d_vectors[0],two_d_vectors[0],self.problem)
 
             for state in CONSTANT.STATES:
@@ -214,7 +223,7 @@ class ValueFunction:
         belief = self.belief_space.get_belief(belief_id)
 
 
-        # RUN linear program for both tabular betas and max_plane betas 
+        # solve for optimal DR using linear program using constructed betas
         if self.sota==False:
             # DR returns joint action probabilities conditioned by state
             max_plane_leader_value , max_plane_DR , max_plane_DR0 , max_plane_DR1 = Utilities.MILP(max_plane_beta,belief)
@@ -231,6 +240,12 @@ class ValueFunction:
             max_plane_leader_value, max_plane_DR, max_plane_DR0, max_plane_DR1 = Utilities.sota_strategy(max_plane_beta,belief,game_type)
             tabular_leader_value , tabular_DR , tabular_DR0 , tabular_DR1 = Utilities.MILP(max_plane_beta,self.belief_space.belief_dictionary[belief_id])
 
+            #extract tabular follower value
+            tabular_follower_value = 0
+            for state in CONSTANT.STATES:
+                for joint_action, joint_action_probability in enumerate(tabular_DR[state]):
+                    tabular_follower_value += belief.value[state] * max_plane_beta.two_d_vectors[1][state][joint_action]  * joint_action_probability
+          
 
         max_plane_alpha = max_plane_beta.get_alpha_vector(belief,game_type,DecisionRule(max_plane_DR0,max_plane_DR1,max_plane_DR), self.sota)
         tabular_alpha = tabular_beta.get_alpha_vector(belief,game_type,DecisionRule(tabular_DR0,tabular_DR1,tabular_DR),self.sota)

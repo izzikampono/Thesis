@@ -39,7 +39,6 @@ class PBVI:
             print(f"========== backup at timestep {timestep} ========== ")
 
             for belief_id in self.belief_space.time_index_table[timestep]:
-                # self.value_function.tabular_backup(belief_id,timestep,self.gametype)
                 self.value_function.backup(belief_id,timestep,self.gametype)
 
 
@@ -50,8 +49,7 @@ class PBVI:
                 tabular_value = self.value_function.get_tabular_value_at_belief(belief_id,timestep)
                 max_plane_value = self.value_function.get_max_plane_values_at_belief(belief,timestep)
 
-                print(f"\n=========== backup for belief id {belief_id} ============ ")
-                if tabular_value[0]!= max_plane_value[0] or tabular_value[1] != max_plane_value[1]:
+                if np.abs(tabular_value[0]- max_plane_value[0])>0.01 or np.abs(tabular_value[1]- max_plane_value[1])>0.01:
                     print(f"\n\nDifference found at timestep {timestep} , belief id = {belief_id}, tabular value : {tabular_value}, max plane value : {max_plane_value}\n")
                     point_beta = self.value_function.tabular_beta(belief_id,timestep,self.gametype)
                     alpha_mappings = self.value_function.get_alpha_mappings(belief_id,timestep)
