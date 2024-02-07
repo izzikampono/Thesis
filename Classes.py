@@ -43,7 +43,7 @@ class PBVI:
 
 
 
-            ## check solution
+            ## check solutions
             for belief_id in self.belief_space.time_index_table[timestep]:
                 belief = self.belief_space.belief_dictionary[belief_id]
                 tabular_value = self.value_function.get_tabular_value_at_belief(belief_id,timestep)
@@ -55,22 +55,18 @@ class PBVI:
                     alpha_mappings = self.value_function.get_alpha_mappings(belief_id,timestep)
                     beta = self.value_function.max_plane_beta(alpha_mappings,self.gametype)
 
-                    point_leader_value, DR , DR0 , DR1 = Utilities.MILP(point_beta,belief)
-                    point_follower_value = 0
-                    for state in CONSTANT.STATES:
-                        for joint_action, joint_action_probability in enumerate(DR[state]):
-                            point_follower_value += belief.value[state] * point_beta.two_d_vectors[1][state][joint_action]  * joint_action_probability 
+                    if self.sota == False:
+                        point_leader_value, DR = Utilities.MILP(point_beta,belief)
+                        point_follower_value = Utilities.extract_follower_value(belief,DR,point_beta)
 
+                        alpha_leader_value, DR = Utilities.MILP(beta,belief)
+                        alpha_follower_value = Utilities.extract_follower_value(belief,DR,beta)
 
-                    alpha_leader_value, DR , DR0 , DR1 = Utilities.MILP(beta,belief)
-                    alpha_follower_value = 0
-                    for state in CONSTANT.STATES:
-                        for joint_action, joint_action_probability in enumerate(DR[state]):
-                            alpha_follower_value += belief.value[state] *  beta.two_d_vectors[1][state][joint_action]  * joint_action_probability 
-
+                    else:
+                        point_leader_value,point_follower_value, DR = Utilities.sota_strategy(belief,point_beta,self.gametype)
+                        alpha_leader_value,alpha_follower_value, DR = Utilities.sota_strategy(belief,beta,self.gametype)
                     print(f"Linear Program Results :")
                     print(f"point based solution value : {point_leader_value},{point_follower_value} , alpha vector value : {alpha_leader_value,alpha_follower_value}")
-
 
                     sys.exit()
                 
