@@ -89,7 +89,14 @@ def  observation_probability(joint_observation,belief,joint_action):
                 sum += belief.value[state]  * CONSTANT.TRANSITION_FUNCTION[joint_action][state][next_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][state][joint_observation]
     return sum
 
-
+def initialize_alpha_mapping():
+    alpha_mapping = {0:{},1:{}}
+    for agent in range(2):
+        for joint_action in CONSTANT.JOINT_ACTIONS:
+            alpha_mapping[agent][joint_action] = {}
+            for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
+                alpha_mapping[agent][joint_action][joint_observation] = None
+    return alpha_mapping
 
 
 def MILP(beta,belief):
@@ -196,7 +203,7 @@ def sota_strategy(belief,beta, game_type):
         return new_cooperative_sota(belief,beta)
     
     
-def stackelberg_sota(beta,belief):
+def stackelberg_sota(belief,beta):
     """returns value by  \sum over state += b(x) a(u^j) beta(x,u)"""
     leader_value , decision_rule  = MILP(beta,belief)
     follower_value = extract_follower_value(belief,decision_rule,beta)
@@ -276,39 +283,40 @@ def new_zerosum_lp_leader(belief,beta):
     return lp.solution.get_objective_value(),lp.solution.get_value_list(DR)
 
 def new_cooperative_sota(belief,beta):
-    best_follower_action = {}
-    best_follower_action_value = {}
+    best_leader_action = 0
+    best_follower_value = -np.inf 
+    best_follower_decisoin_rule = {}
 
     # get follower best response for each state 
     for leader_action in CONSTANT.ACTIONS[0]:
+        
+        follower_value = 0
+        follower_decisoin_rule = {}
         for state in CONSTANT.STATES:
-            best_follower_action_value[state] = -np.inf
-            follower_action_value = 0
+            max = -np.inf
             for follower_action in CONSTANT.ACTIONS[1]:
-                follower_action_value = beta.two_d_vectors[1][state][PROBLEM.get_joint_action(leader_action,follower_action)]
-                if follower_action_value > best_follower_action_value[state]:
-                    best_follower_action[state] = follower_action
-                    best_follower_action_value[state] = follower_action_value
+                value = beta.two_d_vectors[0][state][PROBLEM.get_joint_action(leader_action,follower_action)]
+                if value > max:
+                    max = value
+                    follower_decisoin_rule[state] = follower_action
+            follower_value += belief.value[state] * max
+
+        if follower_value > best_follower_value:
+            best_leader_action = leader_action
+            best_follower_value = follower_value
+            best_follower_decisoin_rule = follower_decisoin_rule
+
 
     # get binary DR of follower a(u|x)
     follower_DR = {}
     for state in CONSTANT.STATES:
-        follower_DR[state] = np.identity(len(CONSTANT.ACTIONS[1]))[best_follower_action[state]]
-
-    max_value = -np.inf
-    for leader_action in CONSTANT.ACTIONS[0]:
-        value = 0
-        for state in CONSTANT.STATES:
-            value += belief.value[state] * follower_DR[state][leader_action] * beta.two_d_vectors[0][state][PROBLEM.get_joint_action(leader_action,best_follower_action[state])]
-        if value > max_value :
-            best_leader_action = leader_action
-            max_value = value
-    
+        follower_DR[state] = np.identity(len(CONSTANT.ACTIONS[1]))[best_follower_decisoin_rule[state]]
+  
     leader_DR = np.identity(len(CONSTANT.ACTIONS[1]))[best_leader_action]
 
     joint_DR = get_joint_DR(leader_DR,follower_DR)
     
-    return max_value, max_value, DecisionRule(leader_DR,follower_DR,joint_DR)
+    return best_follower_value, best_follower_value, DecisionRule(leader_DR,follower_DR,joint_DR)
 
 
 def new_zerosum_lp_follower(belief,beta):
@@ -319,7 +327,7 @@ def new_zerosum_lp_follower(belief,beta):
     V = lp.continuous_var(name="V",ub=float('inf'),lb=float('-inf'))
     DR = {}
     for state in CONSTANT.STATES:
-        DR[state] = lp.binary_var_list(len(CONSTANT.ACTIONS[1]), name = [f"a1_u{i}_x{state}" for i in CONSTANT.ACTIONS[1]])
+        DR[state] = lp.continuous_var_list(len(CONSTANT.ACTIONS[1]), name = [f"a1_u{i}_x{state}" for i in CONSTANT.ACTIONS[1]])
        
     # define objective function 
     lp.minimize(V)
@@ -357,8 +365,8 @@ def zerosum_lp_leader(payoff):
     lp = Model(f"{PROBLEM} problem")
 
     #initialize linear program variables
-    DR =  lp.continuous_var_list(len(CONSTANT.ACTIONS[0]),name = [f"a0_{i}" for i in CONSTANT.ACTIONS[1]],ub=1,lb=0)
     V = lp.continuous_var(name="V",ub=float('inf'),lb=float('-inf'))
+    DR =  lp.continuous_var_list(len(CONSTANT.ACTIONS[0]),name = [f"a0_{i}" for i in CONSTANT.ACTIONS[1]],ub=1,lb=0)
 
     # define objective function 
     lp.maximize(V)

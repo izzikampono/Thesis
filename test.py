@@ -28,13 +28,13 @@ else :
 #import problem
 problem = DecPOMDP(file_name,horizon=planning_horizon)
 Constants.initialize(problem)
-import Classes
+import pbvi
 
 
 # solve
 start_time = time.time()
 num_points = 100
-game = Classes.PBVI(problem,planning_horizon,0.0000001,game_type,num_points,sota=sota_)
+game = pbvi.PBVI(problem,planning_horizon,0.0000001,game_type,num_points,sota=sota_)
 game.solve(num_iterations,1)
 end_time = time.time()
 solve_time = end_time - start_time

@@ -6,43 +6,6 @@ CONSTANT = Constants.get_instance()
 
 
 
-class BeliefNetwork:
-    def __init__(self,horizon) :
-        """    Mapping of belief tree using belief_ids and joint_action , joint_observation branches """
-        """    belief_id,joint_action,joint_observation ->   list(next_belief_ids)                    """
-        self.network = {}
-   
-    def add_new_connection(self,belief_id,joint_action,joint_observation,next_belief_id):
-        if belief_id not in self.network: 
-            self.network[belief_id] = {joint_action:{joint_observation:None}}
-        if joint_action not in self.network[belief_id]:
-            self.network[belief_id][joint_action] = {}
-        if joint_observation not in self.network[belief_id][joint_action]:
-            self.network[belief_id][joint_action][joint_observation] = None
-        self.network[belief_id][joint_action][joint_observation] = next_belief_id
-        return
-    
-    def existing_next_belief_id(self,belief_id,joint_action,joint_observation):
-        if belief_id in self.network.keys():
-            if joint_action in self.network[belief_id].keys():
-                if joint_observation in self.network[belief_id][joint_action].keys() :
-                    if self.network[belief_id][joint_action][joint_observation]!= None : return self.network[belief_id][joint_action][joint_observation]
-                    else : 
-                        print("no belief found")
-                        sys.exit()
-                else : 
-                    print("unexplored branch")
-                    sys.exit()
-
-        return None
-
-    def print_network(self):
-        for belief_id in self.network.keys():
-            print(f"belief {belief_id}")
-            for joint_action in self.network[belief_id]:
-                for joint_observation in self.network[belief_id][joint_action]:
-                    print(f"  ∟ action {joint_action}, observation {joint_observation} : belief {self.network[belief_id][joint_action][joint_observation]}")
-
 class BeliefSpace:
     def __init__(self,horizon,initial_belief,density, limit):
         self.density = density
@@ -54,11 +17,10 @@ class BeliefSpace:
         else : self.initial_belief = initial_belief
 
         #initialize network
-        self.network = BeliefNetwork(horizon)
+        self.network = BeliefNetwork(horizon,self)
 
         #initialize belief dictionary that keeps mapping of beliefs to belief_ids
-        self.belief_dictionary = {}
-        self.belief_dictionary[0] = self.initial_belief
+        self.belief_dictionary = {0:self.initial_belief}
 
         #initialize time_index_table dictionary that stores beliefs at every timestep as a set (so as to only keep unique ids)
         self.time_index_table = {}
@@ -68,7 +30,31 @@ class BeliefSpace:
         #add intial belief at timstep zero 
         self.time_index_table[0].add(0)
         self.id = 1
-      
+    
+    def reset(self):
+
+        self.belief_dictionary = {0:self.initial_belief}
+
+
+        #initialize network
+        self.network = BeliefNetwork(self.horizon,self)
+
+        #initialize belief dictionary that keeps mapping of beliefs to belief_ids
+        self.belief_dictionary = {}
+        self.belief_dictionary[0] = self.initial_belief
+
+        #initialize time_index_table dictionary that stores beliefs at every timestep as a set (so as to only keep unique ids)
+        self.time_index_table = {}
+        for timestep in range(self.horizon+2):
+            self.time_index_table[timestep] = set()
+
+        #add intial belief at timstep zero 
+        self.time_index_table[0].add(0)
+        self.id = 1
+
+    def set_density(self,density):
+        self.density = density
+        return
     
     def get_belief(self,belief_id):
         return self.belief_dictionary[belief_id]
@@ -98,20 +84,11 @@ class BeliefSpace:
         """ returns belief and belief_id at timestep t that is closest in distance to the input belief """
         if not self.distance(belief) :
             max = np.inf
-            closest_belief = None
-            # random.sample(beliefs_t, len(beliefs_t))
-            # for id, stored_belief in self.belief_dictionary.items():
-            #     distance = np.linalg.norm(belief.value - stored_belief.value)
-            #     if distance<max: 
-            #         closest_belief = stored_belief
-            #         closest_belief_id = id
-            #         max = distance
-            min_belief = min(self.belief_dictionary.values(), key=lambda stored_belief: np.linalg.norm(stored_belief.value-belief.value))
-            closest_belief_id = self.find_belief_id(min_belief)
-            if closest_belief_id!=None: return closest_belief,closest_belief_id
+            closest_belief_id, min_belief_value = min(self.belief_dictionary.items(), key=lambda stored_belief: np.linalg.norm(stored_belief[1].value - belief.value))
+            if closest_belief_id!=None: return self.get_belief(closest_belief_id),closest_belief_id
             else : 
                 print("err0r : no belief found")
-                print(min_belief.value)
+                print(min_belief_value)
                 print(closest_belief_id)
 
                 sys.exit()
@@ -119,10 +96,11 @@ class BeliefSpace:
             print("New belief encountered, improper sampling!")
             sys.exit()
         
-
+    
     def belief_size(self):
         """return number of beliefs in bag"""
         return len(self.belief_dictionary)
+
     
     def add_new_belief_in_bag(self,belief,timestep):
         belief.set_id(self.id)
@@ -133,25 +111,77 @@ class BeliefSpace:
 
     def expansion(self):
         """populates self.belief_state table by expanding belief tree to all branches so long as it satisfies density sufficiency"""
-        for timestep in range(self.horizon+1):
+        self.reset()
+        for timestep in range(self.horizon):
             for current_belief_id in self.time_index_table[timestep]:
                     for joint_action in CONSTANT.JOINT_ACTIONS:
                         for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                            n_belief = self.belief_dictionary[current_belief_id].next_belief(joint_action,joint_observation)
-                            if n_belief:
+                            if Utilities.observation_probability(joint_observation,self.get_belief(current_belief_id),joint_action):
+                                n_belief = self.belief_dictionary[current_belief_id].next_belief(joint_action,joint_observation)
                                 if self.distance(n_belief) and len(self.belief_dictionary) < self.limit:
-                                    self.network.add_new_connection(current_belief_id,joint_action,joint_observation,self.id)
+                                    self.network.add_new_connection(timestep+1,current_belief_id,joint_action,joint_observation,self.id)
                                     self.add_new_belief_in_bag(n_belief,timestep)
                                 elif len(self.belief_dictionary) < self.limit:
                                     closest_belief,closest_belief_index = self.get_closest_belief(n_belief)
-                                    self.network.add_new_connection(current_belief_id,joint_action,joint_observation,closest_belief_index)
+                                    self.network.add_new_connection(timestep+1,current_belief_id,joint_action,joint_observation,closest_belief_index)
                                     self.time_index_table[timestep+1].add(closest_belief_index)
     
         print(f"\tbelief expansion done, belief space size = {self.belief_size()}\n")
       
+    def existing_next_belief(self,timestep,belief,joint_action,joint_observation):
+        belief_id = self.network.get_belief_id(belief,joint_action,joint_observation)
+        self.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
+        return
        
-       
-       
+
+class BeliefNetwork(BeliefSpace):
+    def __init__(self,horizon, belief_space) :
+        """    Mapping of belief tree using belief_ids and joint_action , joint_observation branches """
+        """    belief_id,joint_action,joint_observation ->   list(next_belief_ids)                    """
+        self.network = dict.fromkeys([timestep for timestep in range(0,horizon+2)],{})
+        self.belief_space = belief_space
+
+   
+    def add_new_connection(self,timestep,belief_id,joint_action,joint_observation,next_belief_id):
+        if belief_id not in self.network[timestep].keys(): 
+            self.network[timestep][belief_id] = {joint_action:{joint_observation:None}}
+        if joint_action not in self.network[timestep][belief_id]:
+            self.network[timestep][belief_id][joint_action] = {}
+        if joint_observation not in self.network[timestep][belief_id][joint_action]:
+            self.network[timestep][belief_id][joint_action][joint_observation] = None
+        self.network[timestep][belief_id][joint_action][joint_observation] = next_belief_id
+        return
+    
+    def get_belief_id(self,timestep,belief,joint_action,joint_observation):
+        for beleif_id,stored_connections in self.network[timestep].items():
+            if joint_action in stored_connections.keys():
+                if joint_action in stored_connections[joint_action].keys():
+                    if stored_connections[joint_action][joint_observation].action_label==joint_action and stored_connections[joint_action][joint_observation].observation_label==joint_observation:
+                        if np.linalg.norm(stored_connections[joint_action][joint_observation].value-belief.value)<=self.belief_space.density:
+                            return stored_connections[joint_action][joint_observation]
+            return
+
+    def existing_next_belief_id(self,timestep,belief_id,joint_action,joint_observation):
+        if belief_id in self.network[timestep]:
+            if joint_action in self.network[timestep][belief_id].keys():
+                if joint_observation in self.network[timestep][belief_id][joint_action].keys() :
+                    if self.network[timestep][belief_id][joint_action][joint_observation]!= None : return self.network[timestep][belief_id][joint_action][joint_observation]
+                    else : 
+                        print("no belief found in network for this specified connection")
+                        sys.exit()
+                else : 
+                    print(f"unexplored branch from belief id {belief_id}")
+                    sys.exit()
+        print("no belief id in timestep")
+        return None
+
+    def print_network(self):
+        for belief_id in self.network.keys():
+            print(f"belief {belief_id}")
+            for joint_action in self.network[belief_id]:
+                for joint_observation in self.network[belief_id][joint_action]:
+                    print(f"  ∟ action {joint_action}, observation {joint_observation} : belief {self.network[belief_id][joint_action][joint_observation]}")
+
     
          
 

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from decpomdp import DecPOMDP
-import Classes
+import pbvi
 import time
 import sys
 import gc
@@ -24,7 +24,7 @@ else :
 print("Initializing problem...")
 games = ["cooperative","zerosum","stackelberg"]
 problem = DecPOMDP(file_name, 1,horizon=planning_horizon)
-Classes.set_problem(problem)
+pbvi.set_problem(problem)
 
 print(f"{file_name} Problem description:")
 print(f"game size :\n\t|S| = {len(problem.states)}")
@@ -124,7 +124,7 @@ for gametype in ["cooperative","zerosum","stackelberg"]:
     for horizon in range(1,planning_horizon+1):
         for sota_ in [False,True]:
             print(f"\n============= {gametype} GAME WITH HORIZON {horizon} , SOTA {sota_} ===========")
-            game = Classes.PBVI(problem=problem,horizon=horizon,density=0.9,gametype=gametype,sota=sota_)
+            game = pbvi.PBVI(problem=problem,horizon=horizon,density=0.9,gametype=gametype,sota=sota_)
             policies[gametype][sota_] = SOLVE(game,database,horizon,gametype)
     game.build_comparison_matrix(policy_comparison_matrix,policies,gametype,iteration=num_iterations-1)
     export_policy_matrix(policy_comparison_matrix,gametype)

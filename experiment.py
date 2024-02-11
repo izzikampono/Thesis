@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from decpomdp import DecPOMDP
-import Classes
+import pbvi
 from constant import Constants
 import time
 import sys
@@ -25,7 +25,7 @@ else :
 
 #import problem
 problem = DecPOMDP(file_name, 1,horizon=planning_horizon)
-Classes.set_problem(problem)
+pbvi.set_problem(problem)
 
 
 # solve
@@ -71,8 +71,8 @@ for game_type in ["cooperative","stackelberg","zerosum"]:
         for horizon_ in range(1,planning_horizon+1):
             print(f"\n===== GAME of type {game_type} WITH HORIZON {horizon_} , SOTA {sota_} =====")
             problem = DecPOMDP(file_name,horizon = horizon_, num_players=1)
-            Classes.set_problem(problem)
-            game = Classes.PBVI(problem=problem,horizon=horizon_,density=0.1,gametype=game_type,sota=sota_)
+            pbvi.set_problem(problem)
+            game = pbvi.PBVI(problem=problem,horizon=horizon_,density=0.1,gametype=game_type,sota=sota_)
             policy, time_ , value_fn = SOLVE(game)
             num_beliefs = game.belief_space.belief_size()
             value0,value1= value_fn.get_max_plane_values_at_belief()
