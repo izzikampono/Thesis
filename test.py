@@ -32,26 +32,6 @@ import pbvi
 
 
 # solve
-start_time = time.time()
-num_points = 100
-game = pbvi.PBVI(problem,planning_horizon,0.0000001,game_type,num_points,sota=sota_)
-game.solve(num_iterations,1)
-end_time = time.time()
-solve_time = end_time - start_time
-
-
-
-# results
-# print(f"\n{game_type} {file_name} problem with {num_iterations} iterations solved in ", solve_time, "seconds\n")
-# print("print policy tree?")
-# if input("answer (y/n) :") =="y":
-#     print("\nLEADER POLICY\n")
-#     policy[0].print_trees()
-#     print("\nFOLLOWER POLICY\n")
-#     policy[1].print_trees()
-
-
-# policy[0].print_trees()
-# policy[1].print_trees()
-
-
+game = pbvi.PBVI(problem,planning_horizon,0.0000001,game_type,limit=1000,sota=sota_)
+values,times = game.solve(num_iterations)
+print(f"\nvalues at initial belief:\n {values}\ntime :\n{times}\n")

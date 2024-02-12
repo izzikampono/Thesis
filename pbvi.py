@@ -38,26 +38,30 @@ class PBVI:
 
     def backward_induction(self):
         #start loop from  horizon-1
-        for timestep in range(self.horizon,-1,-1):
+        for timestep in range(self.horizon-1,-1,-1):
             print(f"========================= backup at timestep {timestep} =========================== ")
-
+            print()
             for belief_id in self.belief_space.time_index_table[timestep]:
                 self.value_function.backup(belief_id,timestep,self.gametype)
 
             print("========== Backup done, veryfing calulations for next timestep backup ==========")
 
             ## check solutions
+            print(f"{(belief_id,self.belief_space.get_belief(belief_id)) in self.belief_space.time_index_table[timestep]}")
             for belief_id in self.belief_space.time_index_table[timestep]:
-                belief = self.belief_space.belief_dictionary[belief_id]
-                tabular_value = self.value_function.get_tabular_value_at_belief(belief_id,timestep)
-                max_plane_value = self.value_function.get_max_plane_values_at_belief(belief,timestep)
-                max_alpha, _ = self.value_function.get_max_alpha(belief,timestep)
+                belief = self.belief_space.get_belief(belief_id)
+                print(f"{(belief_id,belief.value)}")
 
-                if np.abs(tabular_value[0]- max_plane_value[0])>0.1 or np.abs(tabular_value[1]- max_plane_value[1])>0.1:
-                    print(f"\n\nDifference found for {self.gametype} {self.problem.name} game with SOTA = {self.sota}\nat timestep {timestep} , belief id = {belief_id}, tabular value : {tabular_value}, max plane value : {max_plane_value}\n")
+                tabular_value = self.value_function.get_tabular_value_at_belief(belief_id,timestep)
+                max_alpha, max_alpha_value = self.value_function.get_max_alpha(belief,timestep)
+                if np.abs(tabular_value[0]- max_alpha_value[0])>0.1 or np.abs(tabular_value[1]- max_alpha_value[1])>0.1:
+                    print(f"\n\nDifference found for {self.gametype} {self.problem.name} game with SOTA = {self.sota}\nat timestep {timestep} , belief id = {belief_id}, tabular value : {tabular_value}, max plane value : {max_alpha_value}\n")
                     tabular_beta = self.value_function.tabular_beta(belief_id,timestep,self.gametype)
                     alpha_mappings = self.value_function.get_alpha_mappings2(belief_id,timestep)
                     beta = self.value_function.max_plane_beta2(belief_id,alpha_mappings,self.gametype)
+
+                    print(f"dealing with belief of value = {belief.value}\n")
+
                    
 
                     print("looking into beta vector..")
@@ -65,17 +69,17 @@ class PBVI:
                         for state in CONSTANT.STATES:
                             for joint_action in CONSTANT.JOINT_ACTIONS:
                                 if beta.two_d_vectors[agent][state][joint_action] != tabular_beta.two_d_vectors[agent][state][joint_action] :
-                                
+                            
                                     print(f"\tagent {agent}, beta(x = {state},  u = {joint_action}) , max_plane_beta = {beta.two_d_vectors[agent][state][joint_action]} , tabular_beta = {tabular_beta.two_d_vectors[agent][state][joint_action]} ")
+                                    
                                     print("\tlooking into future component of beta..")
                                     reward= CONSTANT.REWARDS[self.gametype][agent][joint_action][state]
                                     print(f"\t\treward  = {reward}")
                                     print(f"\t\tfuture component :  max_plane_beta = {beta.two_d_vectors[agent][state][joint_action]-reward} , tabular_beta = {tabular_beta.two_d_vectors[agent][state][joint_action]-reward}")
-
+                                    sys.exit()
                                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
                                         next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
                                         print(f"\t\tPr({joint_observation}|b,{joint_action}) = {Utilities.observation_probability(joint_observation,belief,joint_action)} ,Future reward from max_plane {alpha_mappings[agent][joint_action][joint_observation]}, Future reward from point based {self.point_value_fn[timestep+1][next_belief_id].get_value(self.belief_space.get_belief(next_belief_id))[agent]} ")
-                                    
 
                                     sys.exit()
 
@@ -91,17 +95,33 @@ class PBVI:
                         point_leader_value,point_follower_value, tabular_DR = Utilities.sota_strategy(belief,tabular_beta,self.gametype)
                         alpha_leader_value,alpha_follower_value, DR = Utilities.sota_strategy(belief,beta,self.gametype)
                     
+                
+                    print(f"\nLinear Program Results :")
+                    print(f"tabular solution value : {point_leader_value,point_follower_value} max-plane solution value : {alpha_leader_value,alpha_follower_value}\n")
+                    
                     max_plane_alpha = beta.get_alpha_vector(belief,self.gametype,DR, self.sota)
                     tabular_alpha = tabular_beta.get_alpha_vector(belief,self.gametype,tabular_DR,self.sota)
-                    
-                    print(f"\nLinear Program Results :")
-                    print(f"tabular solution value : {point_leader_value,point_follower_value} max-plane solution value : {alpha_leader_value,alpha_follower_value}")
                     print(f"\nreconstructed alpha vectors:\n\tmax_plane  vector :{max_plane_alpha.vectors}\n\ttabular vector : {tabular_alpha.vectors}")
-                    print(f"\nmax alpha vector that was found for this belief id :\n{max_alpha.vectors}")
-                    sys.exit()
-                
+                    print(f"\nmax alpha vector that was found for this belief id :\n{max_alpha.vectors}\n")
 
-           
+                    
+
+
+                    # for alpha in self.value_function.vector_sets[timestep]:
+                    #     if alpha.get_value(belief)[0] >= tabular_value[0]:
+                    #         print("FOUND BIGGER ALPHA")
+                    #         for alpha_state, belief_state in zip(alpha.vectors[0],belief.value):
+                    #             print(f"\talpha(x) = {alpha_state} , belief_state(x) = {belief_state} => {alpha_state * belief_state}")
+
+                    #         sys.exit()
+
+
+                    sys.exit()
+                else : 
+                    print(f"belief = {self.belief_space.get_belief(belief_id).value}, max-plane vector = {max_alpha.vectors} , value = {max_alpha_value}/{max_alpha.get_value(self.belief_space.get_belief(belief_id))} , tabular alpha = {self.value_function.point_value_fn[timestep][belief_id].vectors}  ,tabular value = {tabular_value}")
+                
+        sys.exit()
+        
     def solve(self,iterations):
         "solve function that uses a fixed density"
 
@@ -167,42 +187,6 @@ class PBVI:
               
         return values, times, densities , belief_sizes
                
-    def solve_density_increase(self,iterations,density,growth):
-
-        # expand belief space and initialize Value Function
-        self.value_function = ValueFunction(self.horizon,self.initial_belief,self.problem,self.belief_space,sota=self.sota)
-        self.belief_space.set_density(density)
-        values = []
-        densities = []
-        times = []
-        belief_sizes = []
-        start_time = time.time()
-
-        for _ in range(iterations):
-
-            #solving
-            self.belief_space.expansion()
-            self.backward_induction()
-
-            # record measurements
-            values.append( self.value_function.get_max_plane_values_at_belief(self.initial_belief,timestep=0))
-            densities.append(self.belief_space.density)
-            times.append(time.time()-start_time)
-            belief_sizes.append(self.belief_space.belief_size())
-
-            #increase density size
-            self.belief_space.set_density(self.belief_space.density*growth)
-            if self.belief_space.density>0.6:
-                self.belief_space.density=0.6
-            
-        # terminal result printing
-        print("\n\n\n\n\n=========================================================== END ======================================================================")
-        print(f"\npoint value at initial belief  {self.value_function.get_tabular_value_at_belief(belief_id=0,timestep=0)}")
-        print(f"alphavectors value at inital belief (V0,V1) : {self.value_function.get_max_plane_values_at_belief(self.initial_belief,timestep=0)}\n\n")
-       
-              
-        return values, times, densities , belief_sizes
-
               
     def extract_leader_policy(self,belief_id,timestep):
 
@@ -270,21 +254,23 @@ class PBVI:
             #sum over states of follower DR a2(u|x) -> a2(u)
             follower_DR = np.zeros(len(CONSTANT.ACTIONS[1]))
             [follower_DR.__iadd__(np.array(DR) * belief.value[state]) for state,DR in DR.individual[1].items()]
+            
             if follower_DR[follower_action]> 0:
-
 
                 #get actions of the leader agent
                 for leader_action in CONSTANT.ACTIONS[0]:
 
                     joint_action = CONSTANT.PROBLEM.get_joint_action(leader_action,follower_action)
+
                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                        #get next belief of joint action and observation
+                        
+                        # get the existing next belief_id in network using current belief_id, joint action and observation
                         next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
+                        
                         #create subtree for next belief
                         if next_belief_id:
                             subtree = self.extract_follower_policy(next_belief_id,timestep+1)
                             policy.add_subtree(self.belief_space.get_belief(next_belief_id),subtree)
-                        # else:print("no further viable beliefs")
         policy.DR = DR.individual[1]
         policy.value = value
         return policy
@@ -301,6 +287,7 @@ class PBVI:
         #initialize value
         value = 0
         belief = self.belief_space.get_belief(belief_id)
+
         # get V(b) recursively, \sum_{x} \sum{u_joint} += b(x) a1(u1) a2(u2) + \sum_{z} += Pr(z|b,u_joint) * V(TRANSITION(b,u_joint,z))
         for state in CONSTANT.STATES:
             for joint_action in CONSTANT.JOINT_ACTIONS:

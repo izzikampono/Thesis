@@ -82,7 +82,6 @@ def normalize(vector):
 
 def  observation_probability(joint_observation,belief,joint_action):
     """function to calculate probability of an observation given a belief and joint action"""
-
     sum=0
     for state in CONSTANT.STATES:
         for next_state in CONSTANT.STATES:

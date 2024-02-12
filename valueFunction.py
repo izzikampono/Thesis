@@ -58,6 +58,7 @@ class ValueFunction:
         for alpha in self.vector_sets[timestep]:
             leader_value,follower_value = alpha.get_value(belief)
             if leader_value>max:
+                max = leader_value
                 max_value = (leader_value,follower_value)
                 max_alpha = alpha
         return max_alpha,max_value
@@ -73,12 +74,13 @@ class ValueFunction:
     
         for alpha in self.vector_sets[timestep]:
             leader_value, follower_value = alpha.get_value(belief)
-            if( leader_value > max_value ) and alpha.sota==self.sota:
+            if leader_value > max_value :
                 max_value = leader_value
                 max_follower_value = follower_value
 
         return max_value, max_follower_value
         
+    
     
     
     def tabular_beta(self,belief_id,timestep,game_type):
@@ -101,14 +103,16 @@ class ValueFunction:
                 for joint_action in CONSTANT.JOINT_ACTIONS:
                     two_d_vectors[agent][state][joint_action] = reward[agent][joint_action][state]
                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                        if Utilities.observation_probability(joint_observation,belief,joint_action)>0 and timestep < self.horizon:
+                        if Utilities.observation_probability(joint_observation,belief,joint_action)>0 and timestep < self.horizon-1:
                             #calculate next belief and get existing belief id with the same value
                             next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
-                            two_d_vectors[agent][state][joint_action] += Utilities.observation_probability(joint_observation,belief,joint_action) *  self.point_value_fn[timestep+1][next_belief_id].get_value(self.belief_space.get_belief(next_belief_id))[agent]
+                            for next_state in CONSTANT.STATES:
+                                two_d_vectors[agent][state][joint_action]+= CONSTANT.TRANSITION_FUNCTION[joint_action][state][next_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][state][joint_observation]* self.point_value_fn[timestep+1][next_belief_id].vectors[agent][next_state]
+                        
         return BetaVector(two_d_vectors[0],two_d_vectors[1],self.problem)
     
 
-    def max_plane_beta(self,alpha_mappings,game_type):
+    def max_plane_beta(self,belief_id,alpha_mappings,game_type):
         global CONSTANT
         two_d_vectors = {}
         reward = self.problem.REWARDS[game_type]
@@ -124,13 +128,9 @@ class ValueFunction:
                 for joint_action in CONSTANT.JOINT_ACTIONS:
                     two_d_vectors[agent][state][joint_action] = reward[agent][joint_action][state]
                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
+                        if Utilities.observation_probability(joint_observation,self.belief_space.get_belief(belief_id),joint_action)>0 :
                             for next_state in CONSTANT.STATES:
                                 two_d_vectors[agent][state][joint_action]+= CONSTANT.TRANSITION_FUNCTION[joint_action][state][next_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][state][joint_observation]* alpha_mappings[joint_action][joint_observation].vectors[agent][next_state]
-                        
-        # note : u can filter the zero probabilites out of the vector to reduce computational 
-
-        if self.sota==True and game_type=="stackelberg":
-            two_d_vectors[1] = self.get_blind_beta(game_type)
 
         return BetaVector(two_d_vectors[0],two_d_vectors[1],self.problem)
     
@@ -159,6 +159,33 @@ class ValueFunction:
             two_d_vectors[1] = self.get_blind_beta(game_type)
 
         return BetaVector(two_d_vectors[0],two_d_vectors[1],self.problem)
+    
+    def get_alpha_mappings(self,belief_id,timestep):
+        #initialize
+        alpha_mappings = {}
+        for joint_action in CONSTANT.JOINT_ACTIONS:
+            alpha_mappings[joint_action] = {}
+            for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
+                alpha_mappings[joint_action][joint_observation] = None
+        
+        #loop over actions and observations 
+        
+        for joint_action in CONSTANT.JOINT_ACTIONS:
+            for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
+                # if observation probability = 0 , skip and initialize 0 alpha vector for the (action-observation) pair
+                if Utilities.observation_probability(joint_observation,self.belief_space.get_belief(belief_id),joint_action) and timestep< self.horizon:
+                    next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
+                    max = -np.inf
+                    max_alpha = None
+                    #loop over all vectors at timstep, to get maximum alpha that can maximize the value w.r.t  belief
+                    for alpha in self.vector_sets[timestep+1]:
+                        leader_value,follower_value = alpha.get_value(self.belief_space.get_belief(next_belief_id))
+                        if  leader_value>= max:
+                            max = leader_value
+                            max_alpha = alpha
+                    alpha_mappings[joint_action][joint_observation] = max_alpha
+                else : alpha_mappings[joint_action][joint_observation] = AlphaVector(None,np.zeros(len(CONSTANT.STATES)),np.zeros(len(CONSTANT.STATES)),sota=self.sota)
+        return alpha_mappings
 
 
     def get_alpha_mappings2(self,belief_id,timestep):
@@ -176,7 +203,7 @@ class ValueFunction:
             for joint_action in CONSTANT.JOINT_ACTIONS:
                 for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
                     # if observation probability = 0 , skip and initialize 0 alpha vector for the (action-observation) pair
-                    if Utilities.observation_probability(joint_observation,belief,joint_action) and timestep< self.horizon:
+                    if Utilities.observation_probability(joint_observation,belief,joint_action) and timestep< self.horizon-1:
                         next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
                         max = -np.inf
                         max_alpha = None
@@ -189,35 +216,6 @@ class ValueFunction:
                         
                         alpha_mappings[agent][joint_action][joint_observation] = max_alpha.get_value(self.belief_space.get_belief(next_belief_id))[agent]
                     else : alpha_mappings[agent][joint_action][joint_observation] = 0
-        return alpha_mappings
-    
-
-  
-   
-    def get_alpha_mappings(self,belief_id,timestep):
-        #initialize
-        belief = self.belief_space.get_belief(belief_id)
-        alpha_mappings = {}
-        for joint_action in CONSTANT.JOINT_ACTIONS:
-            alpha_mappings[joint_action] = {}
-            for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                alpha_mappings[joint_action][joint_observation] = None
-       
-        #loop over actions and observations 
-        for joint_action in CONSTANT.JOINT_ACTIONS:
-            for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                # if observation probability = 0 , skip and initialize 0 alpha vector for the (action-observation) pair
-                if Utilities.observation_probability(joint_observation,belief,joint_action) and timestep< self.horizon:
-                    next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
-                    max = -np.inf
-                    #loop over all vectors at timstep, to get maximum alpha that can maximize the value w.r.t  belief
-                    for alpha in self.vector_sets[timestep+1]:
-                        leader_value,follower_value = alpha.get_value(belief)
-                        if  leader_value> max:
-                            max = leader_value
-                            alpha_mappings[joint_action][joint_observation] = alpha
-
-                else : alpha_mappings[joint_action][joint_observation] = AlphaVector(None,np.zeros(len(CONSTANT.STATES)),np.zeros(len(CONSTANT.STATES)),sota=self.sota)
         return alpha_mappings
     
 
@@ -289,13 +287,13 @@ class ValueFunction:
                             reward= CONSTANT.REWARDS[game_type][agent][joint_action][state]
                             print(f"\t\treward  = {reward}")
                             print(f"\t\tfuture component :  max_plane_beta = {max_plane_beta.two_d_vectors[agent][state][joint_action]-reward} , tabular_beta = {tabular_beta.two_d_vectors[agent][state][joint_action]-reward}")
-
+                            sys.exit()
                             for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
                                 next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
                                 print(f"\t\tPr({joint_observation}|b,{joint_action}) = {Utilities.observation_probability(joint_observation,belief,joint_action)} ,Future reward from max_plane {alpha_mappings[agent][joint_action][joint_observation]}, Future reward from point based {self.point_value_fn[timestep+1][next_belief_id].get_value(self.belief_space.get_belief(next_belief_id))[agent]} ")
                               
 
-                            sys.exit()
+                     
 
         # return alpha vectors
         return max_plane_alpha , tabular_alpha
