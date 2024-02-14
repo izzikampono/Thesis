@@ -154,7 +154,9 @@ class Experiment():
         plt.legend()
         plt.tight_layout()
         plt.savefig(f"horizon_plot/{self.problem.name} ({self.planning_horizon}).png")
-        plt.show()
+        plt.show(block=False)
+        plt.pause(8)
+        plt.close('all')
 
     def plots(self):
         fig, axs = plt.subplots(3, 1, figsize=(8, 6), sharex=True)
@@ -172,9 +174,10 @@ class Experiment():
         fig.suptitle(f"Results for {self.problem.name} with horizon = {self.planning_horizon}")
         plt.tight_layout()
         plt.legend()
-        plt.savefig(f"plots/{self.problem.name} ({self.horizon}).png")
+        plt.savefig(f"plots/{self.problem.name} ({self.planning_horizon}).png")
 
-        plt.show()
+        plt.show(block=False)
+        plt.close('all')
 
 
     def generate_summary_table(self):
