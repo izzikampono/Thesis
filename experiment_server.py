@@ -36,12 +36,6 @@ if len(sys.argv)> 4 :
 
     database, matrix = experiment.run_experiments(num_iterations,density)
 
-
-
-
-
-
-
 elif len(sys.argv)> 3 :
     file_name = str(sys.argv[1]).split("=")[1]
     planning_horizon = int(sys.argv[2].split("=")[1])
@@ -56,7 +50,7 @@ elif len(sys.argv)> 3 :
     print(f"\t|Z| = {problem.num_joint_observations}\n\t|U| = {problem.num_joint_actions} with |U_i| = {problem.num_actions[0]}")
     print(f"intiial_belief : {problem.actions}")
 
-    database, matrix = experiment.run_experiments_decreasing_density(num_iterations)
+    database, matrix = experiment.run_experiments_decreasing_density(num_iterations,limit=1000)
     experiment.generate_summary_table()
     experiment.horizon_value_plot()
     experiment.plots()

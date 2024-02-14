@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import gc
 from pbvi import PBVI
+from tabularPbvi import tabularPBVI
 from constant import Constants
 gc.enable()
 from matplotlib import rc
@@ -11,12 +12,22 @@ plt.rcParams["font.family"] = "Arial"
 
 class Experiment():
 
-    def __init__(self,planning_horizon,problem):
+    def __init__(self,planning_horizon,problem,algorithm="tabular"):
         self.planning_horizon = planning_horizon
         self.problem = problem
         self.database = None
         self.num_iterations = None
+        self.algorithm = algorithm #tabular or max_plane
+        self.game = None
         
+
+    def initialize_game(self,density,type,limit,sota):
+        if self.algorithm=="max_plane":
+            self.game = PBVI(problem=self.problem,horizon=self.planning_horizon,density=density,gametype=type,limit=limit,sota=sota)
+
+        if self.algorithm=="tabular":
+            self.game = tabularPBVI(problem=self.problem,horizon=self.planning_horizon,density=density,gametype=type,limit=limit,sota=sota)
+
 
 
     def initialize_database(self):
@@ -88,7 +99,7 @@ class Experiment():
         self.database.to_csv(f"raw_results/{self.problem.name} ({self.planning_horizon}).csv", index=False)
 
 
-    def run_experiments_decreasing_density(self,iterations,initial_density=0.01):
+    def run_experiments_decreasing_density(self,iterations,limit=1000,initial_density=0.01):
         stackelberg_policy = {True : {}, False :{}}
         self.initialize_database()
         self.num_iterations = iterations
@@ -96,22 +107,22 @@ class Experiment():
         for type in ["cooperative","zerosum","stackelberg"]:
             for sota in (False,True):
                 for horizon in range(1,self.planning_horizon+1):
-                    game = PBVI(problem = self.problem , horizon = horizon , density = initial_density ,  gametype=type , limit=10000 , sota=sota)
-                    values, times ,densities, belief_sizes , tabular_values = game.solve_sampled_densities(iterations,initial_density)
+                    self.initialize_game(initial_density,type,limit,sota)
+                    values, times ,densities, belief_sizes , tabular_values = self.game.solve_sampled_densities(iterations,initial_density)
                     #extract value of Strong
                     if type=="stackelberg" and horizon==self.planning_horizon:
                         if sota==False: WL_SF = values[-1] #take value at 0 timestep
                         if sota==True: SL_WF = values[-1]
                         print("\nEXTRACTING STACKELBERG POLICIES ... ")
-                        stackelberg_policy[sota][0] = game.extract_leader_policy(0,timestep=0)
-                        stackelberg_policy[sota][1] = game.extract_follower_policy(0,timestep=0)
+                        stackelberg_policy[sota][0] = self.game.extract_leader_policy(0,timestep=0)
+                        stackelberg_policy[sota][1] = self.game.extract_follower_policy(0,timestep=0)
                     self.add_to_database(sota,horizon,type,iterations,times,belief_sizes,values,tabular_values,densities)
         print("calculating stackelberg comparsion matrix...")
 
         #get policy value from strong stackelberg leader and blind follower
-        WL_WF = game.DP(0,0,stackelberg_policy[False][0],stackelberg_policy[True][1])
+        WL_WF = self.game.DP(belief_id=0,timestep=0,leader_tree=stackelberg_policy[False][0],follower_tree=stackelberg_policy[True][1])
         #get policy value from weak stackelberg leader and strong stackelberg follower
-        SL_SF =  game.DP(0,0,stackelberg_policy[True][0],stackelberg_policy[False][1])
+        SL_SF = self.game.DP(belief_id=0,timestep=0,leader_tree=stackelberg_policy[True][0],follower_tree=stackelberg_policy[False][1])
 
 
         # make stackelberg comparison matrix 
@@ -122,8 +133,8 @@ class Experiment():
         return self.database, matrix
 
     def run_single_experiment(self,density,gametype,limit,sota,iterations):
-        game = PBVI(problem=self.problem,horizon=self.planning_horizon,density=density,gametype=gametype,limit=limit,sota=sota)
-        return game.solve(iterations)
+        self.initialize_game(density,gametype,limit,sota)
+        return self.game.solve(iterations)
     
     def horizon_value_plot(self):
         bar_width = 0.35
