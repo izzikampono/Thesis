@@ -18,6 +18,7 @@ class Constants:
         self.OBSERVATION_FUNCTION = problem.observation_fn
         self.REWARDS = self.initialize_rewards()
         self.PROBLEM.reset()
+        self.gametypes = ["cooperative","stackelberg","zerosum"]
     @classmethod
     def get_instance(cls):
         if cls._instance is None:

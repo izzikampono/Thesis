@@ -37,36 +37,6 @@ def print_nested_dict(d, depth=0, parent_key=None, last_child=False):
             prefix = "  " * depth + ("└─ " if is_last else "├─ ")
             print(prefix + str(key) + ": " + str(value))
 
-def generate_probability_distribution(length):
-    #generate random probabilities
-    probabilities = np.random.rand(length)
-
-    #normalize to make the sum equal to 1
-    probabilities /= probabilities.sum()
-
-    return probabilities
-
-#function to generate sample individual decision rule 
-def generate_sample_actions(n):
-    samples=[]
-    for j in range(n):
-        samples.append(generate_probability_distribution(CONSTANT.ACTIONS[0]))
-    return np.array(samples)
-
-#function to generate sample joint decision rule 
-def generate_sample_joint_actions(n):
-    samples=[]
-    l=0
-    for j in range(n):
-        samples.append(generate_probability_distribution(len(CONSTANT.JOINT_ACTIONS)))
-    return np.array(samples)
-
-#function to generate sample belief distribution
-def generate_sample_belief(n):
-    samples=[]
-    for j in range(n):
-        samples.append(generate_probability_distribution(len(CONSTANT.STATES)))
-    return np.array(samples)
 
 def normalize(vector):
     """function to normalize a vector"""
@@ -79,6 +49,13 @@ def normalize(vector):
         print(f"cannot normalize vector V: {vector}")
         sys.exit()
 
+def exponential_decrease(start, stop, num):
+    "function to generate exponentially decreasing values to be used for density values of the belief space"
+    if num == 1:
+        return np.array([start])
+    else:
+        return start * np.power(8, -np.linspace(0, np.log10(start/stop), num))
+
 
 def  observation_probability(joint_observation,belief,joint_action):
     """function to calculate probability of an observation given a belief and joint action"""
@@ -87,15 +64,6 @@ def  observation_probability(joint_observation,belief,joint_action):
         for next_state in CONSTANT.STATES:
                 sum += belief.value[state]  * CONSTANT.TRANSITION_FUNCTION[joint_action][state][next_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][state][joint_observation]
     return sum
-
-def initialize_alpha_mapping():
-    alpha_mapping = {0:{},1:{}}
-    for agent in range(2):
-        for joint_action in CONSTANT.JOINT_ACTIONS:
-            alpha_mapping[agent][joint_action] = {}
-            for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                alpha_mapping[agent][joint_action][joint_observation] = None
-    return alpha_mapping
 
 
 def MILP(beta,belief):
@@ -177,10 +145,6 @@ def MILP(beta,belief):
     print("No solution found for MILP\n")
 
     sys.exit()
-
-
-
-
 
 
 def get_joint_DR(DR0,DR1):
@@ -356,80 +320,6 @@ def new_zerosum_lp_follower(belief,beta):
     else: 
         print("CANNOT SOLVE ZEROSUM FOLLOWER LINEAR PROGRAM ")
         sys.exit()
-
-
-
-def zerosum_lp_leader(payoff):
-    "linear program for SOTA of zerosum game"
-    lp = Model(f"{PROBLEM} problem")
-
-    #initialize linear program variables
-    V = lp.continuous_var(name="V",ub=float('inf'),lb=float('-inf'))
-    DR =  lp.continuous_var_list(len(CONSTANT.ACTIONS[0]),name = [f"a0_{i}" for i in CONSTANT.ACTIONS[1]],ub=1,lb=0)
-
-    # define objective function 
-    lp.maximize(V)
-
-    # define constraints 
-    for opponent_action in CONSTANT.ACTIONS[1]:    
-        rhs = 0   
-        for agent_action, agent_action_probability in enumerate(DR):
-            rhs += payoff[PROBLEM.get_joint_action(agent_action,opponent_action)] * agent_action_probability
-        
-        lp.add_constraint(V<=rhs)
-
-
-    #add sum-to-one constraint
-    lp.add_constraint(lp.sum(DR)==1)
-    
-
-    #solve and export 
-    sol = lp.solve()
-    lp.export_as_lp(f"zerosum_lp_leader")
-
-    # print(f"Linear program solved :{(sol!=None)}")
-    return lp.solution.get_objective_value(),lp.solution.get_values(DR)
-
-
-def zerosum_lp_follower(payoff):
-    "linear program for SOTA of zerosum game"
-    milp = Model(f"{PROBLEM.name} problem")
-
-    #initialize linear program variables
-    DR = []
-    V = []
-    for action in CONSTANT.ACTIONS[1]:
-        DR.append(milp.continuous_var(name=f"a{1}_{action}",ub=1,lb=0))
-    V = milp.continuous_var(name="V",ub=float('inf'),lb=float('-inf'))
-
-    # define objective function 
-    milp.minimize(V)
-
-    # define constraints 
-    for opponent_action in CONSTANT.ACTIONS[0]:    
-        rhs = 0   
-
-        for agent_action, agent_action_probability in enumerate(DR):
-            rhs += payoff[PROBLEM.get_joint_action(opponent_action,agent_action)] * agent_action_probability
-        
-        milp.add_constraint(V>=rhs)
-
-
-    #add sum-to-one constraint
-    value = 0
-    for agent_action_probability in DR:
-        value += agent_action_probability
-    
-    milp.add_constraint(value == 1)
-
-    #solve and export 
-    sol = milp.solve()
-    milp.export_as_lp(f"zerosum_lp_follower")
-
-    # print(f"Linear program solved :{(sol!=None)}")
-    return milp.solution.get_objective_value(), milp.solution.get_values(DR)
-
-
 
 ##########################################################################################################################################################################################################################################
 #######################################################################################################################  CLASS DEFINITIONS  ##############################################################################################

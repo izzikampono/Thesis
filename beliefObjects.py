@@ -130,16 +130,14 @@ class BeliefSpace:
                                     self.time_index_table[timestep+1].add(closest_belief_index)
                                     # print(f"original_next_belief =  {original_next_belief.value}, closest_belief= {closest_belief.value}")
         
-        # print([self.time_index_table[timestep] for timestep in range(self.horizon)]
-        print([(id,belief.value) for id,belief in self.belief_dictionary.items()])
 
         print(f"\tbelief expansion done, belief space size = {self.belief_size()}\n")
 
 
       
-    def existing_next_belief(self,timestep,belief,joint_action,joint_observation):
+    def existing_next_belief(self,belief,joint_action,joint_observation):
         belief_id = self.network.get_belief_id(belief,joint_action,joint_observation)
-        self.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
+        self.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
         return
        
 
@@ -168,7 +166,7 @@ class BeliefNetwork(BeliefSpace):
                             return stored_connections[joint_action][joint_observation]
             return
 
-    def existing_next_belief_id(self,timestep,belief_id,joint_action,joint_observation):
+    def existing_next_belief_id(self,belief_id,joint_action,joint_observation):
         if belief_id in self.network:
             if joint_action in self.network[belief_id].keys():
                 if joint_observation in self.network[belief_id][joint_action].keys() :
@@ -176,9 +174,7 @@ class BeliefNetwork(BeliefSpace):
                     else : 
                         print("no belief found in network for this specified connection")
                         sys.exit()
-                else : 
-                    print(f"unexplored branch from belief id {belief_id}")
-                    sys.exit()
+                else : return None
         print("no belief id in timestep")
         return None
 
