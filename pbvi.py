@@ -46,10 +46,31 @@ class PBVI:
 
             print("========== Backup done, veryfing calulations for next timestep backup ==========")
 
+        
+            for belief_id in self.belief_space.time_index_table[timestep]:
+                belief = self.belief_space.get_belief(belief_id)
+                tabular_value = self.value_function.get_tabular_value_at_belief(belief_id,timestep)
+                max_alpha, max_alpha_value = self.value_function.get_max_alpha(belief,timestep)
+                alpha_belief_id =  self.value_function.get_alpha(timestep,belief_id)
+                print(f"belief = {belief_id} ,   max_plane value {max_alpha_value} , tabular  {self.value_function.get_tabular_value_at_belief(belief_id,timestep)}")
+                if np.abs(max_alpha_value[0] - alpha_belief_id.get_value(belief)[0] ) > 0.01 :
+                # if np.abs(max_alpha_value[0] - alpha_belief_id.get_value(belief)[0] ) > 0.01  or np.abs(max_alpha_value[1]- alpha_belief_id.get_value(belief)[1]) >0.01:
 
-            # for belief_id in self.belief_space.time_index_table[timestep]:
-            #     belief = self.belief_space.get_belief(belief_id)
-            #     print(f"belief = {belief_id} ,   {self.value_function.get_max_plane_values_at_belief(belief,timestep)}   ,   {self.value_function.get_tabular_value_at_belief(belief_id,timestep)}")
+                    print(f"\nbelief_id {belief_id} : {belief.value}  \n max alpha from belief_id = {max_alpha.belief_id}, {max_alpha.vectors} , value =   {max_alpha_value}\nalpha built belief_id =  {alpha_belief_id.vectors} , value = {alpha_belief_id.get_value(self.belief_space.get_belief(belief_id))}")
+                    
+                    
+                    
+                    sys.exit()
+                # for joint_action in CONSTANT.JOINT_ACTIONS:
+                #     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
+                #         next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
+                #         if next_belief_id: 
+                #             if np.abs(max_alpha.get_value(belief)[0] - self.value_function.get_alpha(timestep+1,next_belief_id).get_value(belief)[0] ) > 0.01 :
+                #                 print(f"next_belief_id = {next_belief_id} \nmax alpha from belief_id = {next_belief_id}, {max_alpha.vectors} , value =   {max_alpha.get_value(self.belief_space.get_belief(next_belief_id))}\nalpha built on next_belief_id =  {self.value_function.get_alpha(timestep+1,next_belief_id).vectors} , value = {self.value_function.get_alpha(timestep,next_belief_id).get_value(self.belief_space.get_belief(next_belief_id))}")
+                #                 sys.exit()
+                
+            
+        
             # ## check solutions
             # for belief_id in self.belief_space.time_index_table[timestep]:
 

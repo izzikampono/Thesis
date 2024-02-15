@@ -27,7 +27,7 @@ class TabularValueFunction:
             for belief_id in self.belief_space.time_index_table[timestep]:
                 self.vector_sets[timestep][belief_id] = None
                 #for last horizon, initial 0 vectors
-                if timestep == self.horizon: self.add_alpha_vector(AlphaVector(0,np.zeros(len(CONSTANT.STATES)),np.zeros(len(CONSTANT.STATES)),self.sota),self.horizon,belief_id)
+                if timestep == self.horizon: self.add_alpha_vector(AlphaVector(0,np.zeros(len(CONSTANT.STATES)),np.zeros(len(CONSTANT.STATES)),belief_id,self.sota),self.horizon,belief_id)
 
     def add_alpha_vector(self,alpha,timestep,belief_id):
         self.vector_sets[timestep][belief_id]=alpha
@@ -95,7 +95,7 @@ class TabularValueFunction:
             for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
                 next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
                 if next_belief_id : 
-                    if  timestep == self.horizon : tabular_belief_to_alpha_mapping[next_belief_id] = AlphaVector(None, np.zeros(len(CONSTANT.STATES)), np.zeros(len(CONSTANT.STATES)))
+                    if  timestep == self.horizon : tabular_belief_to_alpha_mapping[next_belief_id] = AlphaVector(None, np.zeros(len(CONSTANT.STATES)), np.zeros(len(CONSTANT.STATES),belief_id))
                     else :tabular_belief_to_alpha_mapping[next_belief_id]= self.vector_sets[timestep][next_belief_id]
 
         return tabular_belief_to_alpha_mapping
@@ -122,7 +122,7 @@ class TabularValueFunction:
             leader_value , follower_value, DR = Utilities.sota_strategy(belief,tabular_beta,game_type)
           
         # reconstruct alpha vectors
-        tabular_alpha = tabular_beta.get_alpha_vector(belief,game_type,DR,self.sota)
+        tabular_alpha = tabular_beta.get_alpha_vector(belief_id,game_type,DR,self.sota)
         print( f"Game {game_type}  ::   tabular LP value : {leader_value,follower_value}  --  reconstructed tabular alpha : {tabular_alpha.get_value(belief)}  --  belief {belief.value}  -- DR {DR}\n" )
 
         #printing

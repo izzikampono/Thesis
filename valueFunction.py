@@ -26,28 +26,46 @@ class ValueFunction:
             self.point_value_fn[timestep] = {}
             self.vector_sets[timestep] = []
             self.point_value_fn[timestep] = {}
-            for belief_index in self.belief_space.time_index_table[timestep]:
-                self.point_value_fn[timestep][belief_index] = None
+            for belief_id in self.belief_space.time_index_table[timestep]:
+                self.point_value_fn[timestep][belief_id] = None
                 #for last horizon, initial 0 vectors
                 if timestep==horizon:
                     vector = np.zeros(len(CONSTANT.STATES))
-                    self.point_value_fn[timestep][belief_index] = AlphaVector(0,vector,vector,self.sota)
+                    self.point_value_fn[timestep][belief_id] = AlphaVector(0,vector,vector,belief_id,self.sota)
+                    self.add_alpha_vector(AlphaVector(0,vector,vector,belief_id,self.sota),horizon)
 
         #initialize last horizon to have a 0 alphavector 
         vector = np.zeros(len(CONSTANT.STATES))
-        self.add_alpha_vector(AlphaVector(0,vector,vector,self.sota),horizon)
+        self.add_alpha_vector(AlphaVector(0,vector,vector,belief_id,self.sota),horizon)
     
 
     def add_alpha_vector(self,alpha,timestep):
         self.vector_sets[timestep].append(alpha)
 
+    def get_alpha(self,timestep,belief_id):
+        vector = np.zeros(len(CONSTANT.STATES))
+        if timestep == self.horizon : return AlphaVector(0,vector,vector,belief_id,self.sota)
+        for alpha in self.vector_sets[timestep]:
+            if alpha.belief_id == belief_id and alpha.belief_id != None:
+                return alpha
+        print("no alpha found ")
 
     def add_tabular_alpha_vector(self,alpha,belief_id,timestep):
         self.point_value_fn[timestep][belief_id] = alpha
 
 
     def pruning(self,timestep):
-        self.vector_sets[timestep] = set(self.vector_sets[timestep])
+        alpha_vectors = [alpha.vectors for alpha in self.vector_sets[timestep]]
+        for fixed_leader_vector,follower_vector in alpha_vectors:
+            check = 0
+            for leader_vector,follower_vector in alpha_vectors:
+                for state in CONSTANT.state:
+                    if fixed_leader_vector[state]>leader_vector[state] : check+=1
+                if check == len(CONSTANT.STATES):
+                    leader_vector
+                    #remove leader vector
+        
+
         # check if this works
 
 
@@ -141,7 +159,8 @@ class ValueFunction:
             for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
                 next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
                 if next_belief_id : 
-                    if  timestep == self.horizon : tabular_belief_to_alpha_mapping[next_belief_id] = AlphaVector(None, np.zeros(len(CONSTANT.STATES)), np.zeros(len(CONSTANT.STATES)))
+                    if  timestep == self.horizon: 
+                        tabular_belief_to_alpha_mapping[next_belief_id] = AlphaVector(None, np.zeros(len(CONSTANT.STATES)), np.zeros(len(CONSTANT.STATES)),belief_id)
                     else :tabular_belief_to_alpha_mapping[next_belief_id]= self.point_value_fn[timestep][next_belief_id]
 
         return tabular_belief_to_alpha_mapping
@@ -153,8 +172,11 @@ class ValueFunction:
             for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
                 next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
                 if next_belief_id : 
-                    if  timestep == self.horizon : maxplane_belief_to_alpha_mapping[next_belief_id] = AlphaVector(None, np.zeros(len(CONSTANT.STATES)), np.zeros(len(CONSTANT.STATES)))
-                    else :maxplane_belief_to_alpha_mapping[next_belief_id], _ = self.get_max_alpha(self.belief_space.get_belief(next_belief_id), timestep)
+                    if  timestep == self.horizon : maxplane_belief_to_alpha_mapping[next_belief_id] = AlphaVector(None, np.zeros(len(CONSTANT.STATES)), np.zeros(len(CONSTANT.STATES)),next_belief_id)
+                    else : 
+                        alpha, _  = self.get_max_alpha(self.belief_space.get_belief(next_belief_id), timestep)
+                        maxplane_belief_to_alpha_mapping[next_belief_id]= alpha
+                        
         return maxplane_belief_to_alpha_mapping
 
 
@@ -184,10 +206,10 @@ class ValueFunction:
             tabular_leader_value , tabular_follower_value, tabular_DR = Utilities.sota_strategy(belief,tabular_beta,game_type)
           
         # reconstruct alpha vectors
-        max_plane_alpha = max_plane_beta.get_alpha_vector(belief,game_type,max_plane_DR, self.sota)
-        tabular_alpha = tabular_beta.get_alpha_vector(belief,game_type,tabular_DR,self.sota)
+        max_plane_alpha = max_plane_beta.get_alpha_vector(belief_id,game_type,max_plane_DR, self.sota)
+        tabular_alpha = tabular_beta.get_alpha_vector(belief_id,game_type,tabular_DR,self.sota)
         # print( f"Game {game_type}  ::  max plane LP value: {max_plane_leader_value,max_plane_follower_value}, tabular LP value : {tabular_leader_value,tabular_follower_value}  --  Reconstructed Max plane alpha: {max_plane_alpha.get_value(belief)}, reconstructed tabular alpha : {tabular_alpha.get_value(belief)}  --  belief {belief.value}  -- DR {max_plane_DR}\n" )
-        print( f"Game {game_type}  ::  max plane LP value: {max_plane_leader_value,max_plane_follower_value}, tabular LP value : {tabular_leader_value,tabular_follower_value}  --  Reconstructed Max plane alpha: {max_plane_alpha.get_value(belief)}, reconstructed tabular alpha : {tabular_alpha.get_value(belief)}  --  belief {belief.value}  -- DR {max_plane_DR}\n" )
+        # print( f"Game {game_type}  ::  max plane LP value: {max_plane_leader_value,max_plane_follower_value}, tabular LP value : {tabular_leader_value,tabular_follower_value}  --  Reconstructed Max plane alpha: {max_plane_alpha.get_value(belief)}, reconstructed tabular alpha : {tabular_alpha.get_value(belief)}  --  belief {belief.value}  -- DR {max_plane_DR}\n" )
 
         #printing
         # if np.abs(max_plane_leader_value-tabular_leader_value)>0.1 :
