@@ -19,6 +19,7 @@ class Experiment():
         self.num_iterations = None
         self.algorithm = algorithm #tabular or max_plane
         self.game = None
+        self.policies = {"cooperative":{},"stackelberg":{},"zerosum":{}}
         
 
     def initialize_game(self,density,type,limit,sota):
@@ -69,19 +70,18 @@ class Experiment():
                     values, times, tabular_value = game.solve(iterations)
                     #at the last horizon of the stackelberg game
                     if type=="stackelberg" and horizon==self.planning_horizon:
-                        if sota==False: SL_SF = values[-1]
-                        if sota==True: WL_WF = values[-1]
+                        if sota==False: WL_SF = values[-1] #take value at last iteration
+                        if sota==True: SL_WF = values[-1]
                         print("\nEXTRACTING STACKELBERG POLICIES ... ")
-                        stackelberg_policy[sota][0] = game.extract_leader_policy(0,timestep=0)
-                        stackelberg_policy[sota][1] = game.extract_follower_policy(0,timestep=0)
+                        self.extract_policies(type,sota)
                     self.add_to_database(sota,horizon,type,
                                          iterations,times,game.belief_space.belief_size(),
                                          values,tabular_value,density)
         print("calculating stackelberg comparsion matrix...")
         #get policy value from strock stackelberg leader and blind agent
-        SL_WF = game.DP(0,0,stackelberg_policy[False][0],stackelberg_policy[True][1])
+        WL_WF = self.game.DP(belief_id=0,timestep=0,leader_tree=self.policies["stackelberg"][False][0],follower_tree=self.policies["stackelberg"][True][1])
         #get policy val ue from weak stackelberg leader and strong stackelberg follower
-        WL_SF =  game.DP(0,0,stackelberg_policy[True][0],stackelberg_policy[False][1])
+        SL_SF = self.game.DP(belief_id=0,timestep=0,leader_tree=self.policies["stackelberg"][True][0],follower_tree=self.policies["stackelberg"][False][1])
 
 
         # make stackelberg comparison matrix and save 
@@ -92,14 +92,14 @@ class Experiment():
         # export database
         self.export_database(f"raw_results/{self.problem.name} ({self.planning_horizon}).csv")
 
-        return self.database, matrix
+        return self.database, matrix, self.policies
     
     def export_database(self,file_name):
         if type(self.database)!=pd.DataFrame : self.database = pd.DataFrame(self.database)
         self.database.to_csv(f"raw_results/{self.problem.name} ({self.planning_horizon}).csv", index=False)
 
 
-    def run_experiments_decreasing_density(self,iterations,limit=1000,initial_density=0.01):
+    def run_experiments_decreasing_density(self,iterations,limit=1000,initial_density=0.0001):
         stackelberg_policy = {True : {}, False :{}}
         self.initialize_database()
         self.num_iterations = iterations
@@ -111,18 +111,17 @@ class Experiment():
                     values, times ,densities, belief_sizes , tabular_values = self.game.solve_sampled_densities(iterations,initial_density)
                     #extract value of Strong
                     if type=="stackelberg" and horizon==self.planning_horizon:
-                        if sota==False: WL_SF = values[-1] #take value at 0 timestep
+                        if sota==False: WL_SF = values[-1] #take value at last iteration
                         if sota==True: SL_WF = values[-1]
                         print("\nEXTRACTING STACKELBERG POLICIES ... ")
-                        stackelberg_policy[sota][0] = self.game.extract_leader_policy(0,timestep=0)
-                        stackelberg_policy[sota][1] = self.game.extract_follower_policy(0,timestep=0)
-                    self.add_to_database(sota,horizon,type,iterations,times,belief_sizes,values,tabular_values,densities)
+                        self.extract_policies(type,sota)
+                    self.add_to_database(sota,horizon,type,iterations,times,belief_sizes,values[-1],tabular_values[-1],densities)
         print("calculating stackelberg comparsion matrix...")
 
         #get policy value from strong stackelberg leader and blind follower
-        WL_WF = self.game.DP(belief_id=0,timestep=0,leader_tree=stackelberg_policy[False][0],follower_tree=stackelberg_policy[True][1])
+        WL_WF = self.game.DP(belief_id=0,timestep=0,leader_tree=self.policies["stackelberg"][False][0],follower_tree=self.policies["stackelberg"][True][1])
         #get policy value from weak stackelberg leader and strong stackelberg follower
-        SL_SF = self.game.DP(belief_id=0,timestep=0,leader_tree=stackelberg_policy[True][0],follower_tree=stackelberg_policy[False][1])
+        SL_SF = self.game.DP(belief_id=0,timestep=0,leader_tree=self.policies["stackelberg"][True][0],follower_tree=self.policies["stackelberg"][False][1])
 
 
         # make stackelberg comparison matrix 
@@ -130,11 +129,20 @@ class Experiment():
         matrix = pd.DataFrame(matrix)
         matrix.to_csv(f"comparison_matrix/{self.problem.name}({horizon}).csv", index=False)        
         self.export_database(f"raw_results/{self.problem.name}({self.planning_horizon})")
-        return self.database, matrix
+        return self.database, matrix ,self.policies
 
     def run_single_experiment(self,density,gametype,limit,sota,iterations):
         self.initialize_game(density,gametype,limit,sota)
-        return self.game.solve(iterations)
+        values,times,tabular_values = self.game.solve(iterations)
+        self.extract_policies(gametype,sota)
+        return values,times,tabular_values,self.policies
+    
+    def extract_policies(self,gametype,sota):
+        self.policies[gametype][sota]  = [self.game.extract_leader_policy(0,timestep=0),self.game.extract_follower_policy(0,timestep=0)]
+        return
+
+
+
     
     def horizon_value_plot(self):
         bar_width = 0.35
@@ -215,4 +223,6 @@ class Experiment():
             df.to_csv(f"processed_results/{gametype}_{self.problem.name}.csv",index=True)
             tables[gametype]=df
         return tables
+    
+        
                 

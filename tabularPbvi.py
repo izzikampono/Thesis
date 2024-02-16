@@ -127,7 +127,7 @@ class tabularPBVI:
                         #create subtree for next belief
                         if next_belief_id:
                             subtree = self.extract_leader_policy(next_belief_id,timestep+1)
-                            policy.add_subtree(self.belief_space.get_belief(next_belief_id),subtree)
+                            policy.add_subtree(next_belief_id,subtree)
         policy.DR = alpha.DR.individual[0]
         policy.value = max
         return policy
@@ -199,7 +199,7 @@ class tabularPBVI:
                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
                         next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation) 
                         if next_belief_id and timestep<self.horizon:
-                            value +=  Utilities.observation_probability(joint_observation,belief,joint_action) * self.DP(next_belief_id, timestep+1, leader_tree.subtree(joint_action,joint_observation) , follower_tree.subtree(joint_action,joint_observation))[agent]
+                            value +=  Utilities.observation_probability(joint_observation,belief,joint_action) * self.DP(next_belief_id, timestep+1, leader_tree.subtree(next_belief_id,joint_action,joint_observation) , follower_tree.subtree(next_belief_id,joint_action,joint_observation))[agent]
             values.append(value)
         return values
     

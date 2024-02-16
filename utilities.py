@@ -180,22 +180,6 @@ def zerosum_sota(belief,beta):
     DR = get_joint_DR(DR0,DR1)
     return leader_value,follower_value, DecisionRule(DR0,DR1,DR)
 
-def cooperative_sota(belief,beta):
-    payoffs = payoff_function(belief,beta)
-    max_value = -np.inf
-    optimal_joint_action = None
-    for joint_action in CONSTANT.JOINT_ACTIONS:
-        if max_value<payoffs[0][joint_action]:
-            max_value = payoffs[0][joint_action]
-            optimal_joint_action = joint_action
-    DR_joint =  np.identity(len(CONSTANT.JOINT_ACTIONS))[optimal_joint_action]
-
-    #seperate joint decision rule
-    action_0, action_1 = PROBLEM.get_seperate_action(optimal_joint_action)
-    DR0 = np.identity(len(CONSTANT.ACTIONS[0]))[action_0]
-    DR1 = np.identity(len(CONSTANT.ACTIONS[1]))[action_1]
-    return (max_value,max_value),DR_joint,DR0,DR1
-
 def extract_follower_value(belief,DR,beta):
     "function to extract follower value from MILP since the docplex model cannot extract follower value"
     tabular_follower_value = 0
@@ -204,14 +188,6 @@ def extract_follower_value(belief,DR,beta):
             tabular_follower_value += belief.value[state] * beta.two_d_vectors[1][state][joint_action]  * joint_action_probability
     return tabular_follower_value
 
-def payoff_function(belief,beta):
-        payoffs = {}
-        for agent in range(0,2):
-            payoffs[agent] = np.zeros(len(CONSTANT.JOINT_ACTIONS))
-            for joint_action in CONSTANT.JOINT_ACTIONS:
-                for state in CONSTANT.STATES:
-                    payoffs[agent][joint_action] += belief.value[state] * beta.two_d_vectors[agent][state][joint_action]
-        return payoffs
 
 def new_zerosum_lp_leader(belief,beta):
     "linear program for SOTA of zerosum game"

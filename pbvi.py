@@ -35,32 +35,36 @@ class PBVI:
         self.density = density
         self.limit = limit
 
+    def reset(self):
+        self.belief_space = BeliefSpace(self.horizon,self.problem.b0,self.density,self.limit)
+        self.value_function = ValueFunction(self.horizon,self.initial_belief,self.problem,self.belief_space,sota=self.sota)
+
+
 
     def backward_induction(self):
         #start loop from  horizon-1
         for timestep in range(self.horizon-1,-1,-1):
-            print(f"========================= backup at timestep {timestep} =========================== ")
-            print()
             for belief_id in self.belief_space.time_index_table[timestep]:
                 self.value_function.backup(belief_id,timestep,self.gametype)
 
-            print("========== Backup done, veryfing calulations for next timestep backup ==========")
+            print(f"\n========== Backup at timestep {timestep} done, veryfing calulations for next timestep backup ==========")
 
-        
+            flag = 0
             for belief_id in self.belief_space.time_index_table[timestep]:
                 belief = self.belief_space.get_belief(belief_id)
                 tabular_value = self.value_function.get_tabular_value_at_belief(belief_id,timestep)
                 max_alpha, max_alpha_value = self.value_function.get_max_alpha(belief,timestep)
                 alpha_belief_id =  self.value_function.get_alpha(timestep,belief_id)
                 print(f"belief = {belief_id} ,   max_plane value {max_alpha_value} , tabular  {self.value_function.get_tabular_value_at_belief(belief_id,timestep)}")
-                if np.abs(max_alpha_value[0] - alpha_belief_id.get_value(belief)[0] ) > 0.01 :
-                # if np.abs(max_alpha_value[0] - alpha_belief_id.get_value(belief)[0] ) > 0.01  or np.abs(max_alpha_value[1]- alpha_belief_id.get_value(belief)[1]) >0.01:
+                if np.abs(max_alpha_value[0] - alpha_belief_id.get_value(belief)[0])> 0.01 :
+                    print(f"\nFOUND DIFFERENCE ! \nbelief_id {belief_id} = {belief.value} ")
 
-                    print(f"\nbelief_id {belief_id} : {belief.value}  \n max alpha from belief_id = {max_alpha.belief_id}, {max_alpha.vectors} , value =   {max_alpha_value}\nalpha built belief_id =  {alpha_belief_id.vectors} , value = {alpha_belief_id.get_value(self.belief_space.get_belief(belief_id))}")
+                    print(f"\tmax alpha (from belief_id = {max_alpha.belief_id}), {max_alpha.vectors} , value =   {max_alpha_value}\n\talpha from current belief_id =  {alpha_belief_id.vectors} , value = {alpha_belief_id.get_value(self.belief_space.get_belief(belief_id))}\n\n")
+                    flag = 1
                     
+            if flag : sys.exit()
                     
-                    
-                    sys.exit()
+                   
                 # for joint_action in CONSTANT.JOINT_ACTIONS:
                 #     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
                 #         next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
@@ -137,12 +141,15 @@ class PBVI:
         times = []
         start_time = time.time()
         self.belief_space.expansion()
+        print(f"{[self.belief_space.time_index_table[index] for index in range(len(self.belief_space.time_index_table))]}")
+
         for _ in range(1,iterations+1):
             print(f"iteration : {_}")
             self.backward_induction()
             values.append(self.value_function.get_max_plane_values_at_belief(belief=self.initial_belief,timestep=0))
             times.append(time.time()-start_time)
             tabular_values.append(self.value_function.get_tabular_value_at_belief(belief_id=0,timestep=0))
+        
 
 
         # terminal result printing
@@ -152,13 +159,17 @@ class PBVI:
         print(f"\n\n==========================================================================================================================================================================")
 
         return values,times,tabular_values
+    
+
     def solve_sampled_densities(self,iterations,min_density):
+        "solve function that uses sampled densities from a given range"
+
+
         np.random.seed(20)
         # initialize Value Function
         print(f"\t\t\t Solving {self.gametype} {self.problem.name} GAME WITH SOTA {self.sota} {self.horizon} ")
 
 
-        self.value_function = ValueFunction(self.horizon,self.initial_belief,self.problem,self.belief_space,sota=self.sota)
         values = []
         tabular_values = []
         times = []
@@ -171,6 +182,7 @@ class PBVI:
         for _ in range(iterations):
             print(f"iteration : {_+1} , density = {densities[_]}")
             #solving
+            self.reset()
             self.belief_space.set_density(densities[_])
             self.belief_space.expansion()
             self.backward_induction()
@@ -213,8 +225,8 @@ class PBVI:
                 max = value[0]
                 DR = alpha.DR
         # print(f"DR at timestep {timestep} , {DR.individual}")
-        if value==0: return PolicyTree(None,None)
-
+        if max==0: return PolicyTree(None,None)
+    
         #for all agent actions
         for leader_action in CONSTANT.ACTIONS[0]:
             #check if probability of action is not 0
@@ -226,11 +238,11 @@ class PBVI:
                     joint_action = CONSTANT.PROBLEM.get_joint_action(leader_action,follower_action)
                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
                         #get next belief of joint action and observation
-                        next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
+                        next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
                         #create subtree for next belief
                         if next_belief_id:
                             subtree = self.extract_leader_policy(next_belief_id,timestep+1)
-                            policy.add_subtree(self.belief_space.get_belief(next_belief_id),subtree)
+                            policy.add_subtree(next_belief_id,subtree)
         policy.DR = DR.individual[0]
         policy.value = max
         return policy
@@ -252,7 +264,7 @@ class PBVI:
                 max = value[1]
                 DR = alpha.DR
 
-        if value==0: return PolicyTree(None)
+        if max==0: return PolicyTree(None)
 
         #for all follower actions
         for follower_action in CONSTANT.ACTIONS[1]:
@@ -272,14 +284,14 @@ class PBVI:
                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
                         
                         # get the existing next belief_id in network using current belief_id, joint action and observation
-                        next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
+                        next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
                         
                         #create subtree for next belief
                         if next_belief_id:
                             subtree = self.extract_follower_policy(next_belief_id,timestep+1)
                             policy.add_subtree(self.belief_space.get_belief(next_belief_id),subtree)
         policy.DR = DR.individual[1]
-        policy.value = value
+        policy.value = max
         return policy
     
 
@@ -306,9 +318,9 @@ class PBVI:
                     leader_action, follower_action = PROBLEM.get_seperate_action(joint_action)
                     value += belief.value[state] * leader_tree.DR[leader_action] * follower_tree.DR[state][follower_action] * reward[joint_action][state]
                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                        next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation) 
+                        next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation) 
                         if next_belief_id and timestep<self.horizon:
-                            value +=  Utilities.observation_probability(joint_observation,belief,joint_action) * self.DP(next_belief_id, timestep+1, leader_tree.subtree(joint_action,joint_observation) , follower_tree.subtree(joint_action,joint_observation))[agent]
+                            value +=  Utilities.observation_probability(joint_observation,belief,joint_action) * self.DP(next_belief_id, timestep+1, leader_tree.subtree(next_belief_id,joint_action,joint_observation) , follower_tree.subtree(next_belief_id,joint_action,joint_observation))[agent]
             values.append(value)
         return values
     
