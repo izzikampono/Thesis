@@ -75,7 +75,21 @@ class ValueFunction:
         max_value = None
         for alpha in self.vector_sets[timestep]:
             leader_value,follower_value = alpha.get_value(belief)
-            if leader_value>max:
+            if leader_value>max :
+                max = leader_value
+                max_value = (leader_value,follower_value)
+                max_alpha = alpha
+        return max_alpha,max_value
+    
+    def get_max_alpha2(self,previous_belief_id,belief_id,timestep):
+        """returns alpha vector object that gives the maximum value for a given belief at a certain timestep"""
+        max = -np.inf
+        max_alpha = None
+        max_value = None
+        belief = self.belief_space.get_belief(belief_id)
+        for alpha in self.vector_sets[timestep]:
+            leader_value,follower_value = alpha.get_value(belief)
+            if leader_value>max and self.belief_space.network.check_connection(previous_belief_id,alpha.belief_id):
                 max = leader_value
                 max_value = (leader_value,follower_value)
                 max_alpha = alpha
@@ -125,28 +139,30 @@ class ValueFunction:
 
     
     def contruct_beta(self, belief_id, timestep, mapping_belief_to_alpha, game_type):
-        #initialize beta and choose appropriate reward
         two_d_vectors = {}
         
-
         for agent in range(0,2):
+            # initialize beta and choose appropriate reward
             reward = CONSTANT.REWARDS[game_type][agent]
             two_d_vectors[agent] = np.zeros((len(CONSTANT.STATES),len(CONSTANT.JOINT_ACTIONS)))
 
+            # if statement for the beta vector of blind opponents in SOTA =TRUE stackelberg games
             if game_type=="stackelberg" and self.sota == True and agent==1 :
                 two_d_vectors[1] = self.get_blind_beta(game_type)
                 return BetaVector(two_d_vectors[0],two_d_vectors[1],self.problem)
 
+             #main loop to calculate beta values of each (state,action) pair
             for state in CONSTANT.STATES:
                 for joint_action in CONSTANT.JOINT_ACTIONS:
+                    # beta(x,u) = r(x,u)
                     two_d_vectors[agent][state][joint_action] = reward[joint_action][state]
-                  
 
+                    # beta(x,u) += \sum_{z} \sum_{y} DYNAMICS(x,u,z,y) * V_{t+1}(Transition(belief,u,z)) [y]
                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                        next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
+                        next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
                         if next_belief_id:
                             for next_state in CONSTANT.STATES:
-                                two_d_vectors[agent][state][joint_action]+= CONSTANT.TRANSITION_FUNCTION[joint_action][state][next_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][state][joint_observation] * mapping_belief_to_alpha[next_belief_id].vectors[agent][next_state]
+                                two_d_vectors[agent][state][joint_action] += CONSTANT.TRANSITION_FUNCTION[joint_action][state][next_state] * CONSTANT.OBSERVATION_FUNCTION[joint_action][state][joint_observation] * mapping_belief_to_alpha[next_belief_id].vectors[agent][next_state]
 
         return BetaVector(two_d_vectors[0],two_d_vectors[1],self.problem)
 
@@ -155,7 +171,7 @@ class ValueFunction:
 
         for joint_action in CONSTANT.JOINT_ACTIONS:
             for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
+                next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
                 if next_belief_id : 
                     if  timestep >= self.horizon-1: 
                         tabular_belief_to_alpha_mapping[next_belief_id] = AlphaVector(None, np.zeros(len(CONSTANT.STATES)), np.zeros(len(CONSTANT.STATES)),next_belief_id)
@@ -168,10 +184,12 @@ class ValueFunction:
 
         for joint_action in CONSTANT.JOINT_ACTIONS:
             for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
+                next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
                 if next_belief_id : 
-                    alpha, _  = self.get_max_alpha(self.belief_space.get_belief(next_belief_id), timestep+1)
-                    maxplane_belief_to_alpha_mapping[next_belief_id]= alpha
+                    if  timestep >= self.horizon-1: maxplane_belief_to_alpha_mapping[next_belief_id] = AlphaVector(None, np.zeros(len(CONSTANT.STATES)), np.zeros(len(CONSTANT.STATES)),next_belief_id)
+                    else:
+                        alpha, _  = self.get_max_alpha2(belief_id,next_belief_id, timestep+1)
+                        maxplane_belief_to_alpha_mapping[next_belief_id] = alpha
         return maxplane_belief_to_alpha_mapping
 
 
@@ -185,6 +203,8 @@ class ValueFunction:
         tabular_beta = self.contruct_beta(belief_id, timestep, self.construct_from_tabular_belief_to_alpha_mapping(belief_id, timestep), game_type)
 
         belief = self.belief_space.get_belief(belief_id)
+
+
         # solve for optimal DR using linear program using constructed beta and current belief
         if self.sota==False:
             # DR returns joint action probabilities conditioned by state
@@ -207,27 +227,30 @@ class ValueFunction:
        
         #printing
         if np.abs(max_plane_leader_value-tabular_leader_value)>0.1 :
-            print(f"\n\n FOUND DIFFERENCE IN alpha vector value for belief ID : {belief_id}! ")
+            print(f"\n\n FOUND DIFFERENCE during backuo of belief ID : {belief_id} at timestep {timestep}! ")
 
-            print( f"Game {game_type}  :: \n\tReconstructed Max plane alpha:{max_plane_alpha.vectors} , value ={max_plane_alpha.get_value(belief)}\n\treconstructed tabular alpha : {tabular_alpha.vectors}, value = {tabular_alpha.get_value(belief)}  --  belief {belief.value}  -- DR {max_plane_DR.joint}\n" )
-            print("looking into beta vector..")
-            print(f"\n\nBETA : \n max_plane:\n{max_plane_beta.two_d_vectors}\ntabular:\n{tabular_beta.two_d_vectors}")
+            print( f"Game {game_type}  :: \n\tReconstructed Max plane alpha:{max_plane_alpha.vectors} , value ={max_plane_alpha.get_value(belief)}\n\treconstructed tabular alpha : {tabular_alpha.vectors}, value = {tabular_alpha.get_value(belief)}  --  belief {belief.value}  -- DR {max_plane_DR}\n" )
+            print("looking into beta vector..\n")
+            # print(f"\n\nBETA : \n max_plane:\n{max_plane_beta.two_d_vectors}\ntabular:\n{tabular_beta.two_d_vectors}")
            
-            # for agent in range(2):
-            #     for state in CONSTANT.STATES:
-            #         for joint_action in CONSTANT.JOINT_ACTIONS:
-            #             if np.abs(max_plane_beta.two_d_vectors[agent][state][joint_action]- tabular_beta.two_d_vectors[agent][state][joint_action])>0.01 :
-                        
-            #                 print(f"\tagent {agent}, beta(x = {state},  u = {joint_action}) , max_plane_beta = {max_plane_beta.two_d_vectors[agent][state][joint_action]} , tabular_beta = {tabular_beta.two_d_vectors[agent][state][joint_action]} ")
-            #                 print("\tlooking into future component of beta..")
-            #                 reward= CONSTANT.REWARDS[game_type][agent][joint_action][state]
-            #                 print(f"\t\treward  = {reward}")
-            #                 print(f"\t\tfuture component :  max_plane_beta = {max_plane_beta.two_d_vectors[agent][state][joint_action]-reward} , tabular_beta = {tabular_beta.two_d_vectors[agent][state][joint_action]-reward}")
-            #                 sys.exit()
-        #                     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-        #                         next_belief_id = self.belief_space.network.existing_next_belief_id(timestep,belief_id,joint_action,joint_observation)
-        #                         print(f"\t\tPr({joint_observation}|b,{joint_action}) = {Utilities.observation_probability(joint_observation,belief,joint_action)} ,Future reward from max_plane {alpha_mappings[agent][joint_action][joint_observation]}, Future reward from point based {self.point_value_fn[timestep+1][next_belief_id].get_value(self.belief_space.get_belief(next_belief_id))[agent]} ")
-                              
+            for agent in range(2):
+                print(f"agent {agent}")
+                for state in CONSTANT.STATES:
+                    for joint_action in CONSTANT.JOINT_ACTIONS:
+                        if np.abs(max_plane_beta.two_d_vectors[agent][state][joint_action]- tabular_beta.two_d_vectors[agent][state][joint_action])>0.01 :
+                            print(f"\n\tbeta(x={state}, u={joint_action}),")
+                            reward= CONSTANT.REWARDS[game_type][agent][joint_action][state]
+                            print(f"\treward  = {reward} + future component from max_plane = {max_plane_beta.two_d_vectors[agent][state][joint_action]-reward}, from tabular = {tabular_beta.two_d_vectors[agent][state][joint_action]-reward}")
+                            alpha_mapping = self.construct_from_maxplane_belief_to_alpha_mapping(belief_id, timestep)
+                            tabular_mapping = self.construct_from_tabular_belief_to_alpha_mapping(belief_id,timestep)
+                            for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
+                                next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
+                                if next_belief_id and next_belief_id!=alpha_mapping[next_belief_id].belief_id: 
+                                    # print(f"\t\tPr({joint_observation}|b_id={belief_id}, u={joint_action}) = {Utilities.observation_probability(joint_observation,belief,joint_action)} ,\n\t\tV^t+1(b_next = {next_belief_id}) = from max_plane (alpha built on belief_id {alpha_mapping[next_belief_id].belief_id}) : {alpha_mapping[next_belief_id].get_value(self.belief_space.get_belief(next_belief_id))} from tabular : {tabular_mapping[next_belief_id].get_value(self.belief_space.get_belief(next_belief_id))}  ")
+                                    print(f"\n\t\talpha from z = {joint_observation} , V^t+1(b_next = {next_belief_id}) = from max_plane (alpha built on belief_id {alpha_mapping[next_belief_id].belief_id}) :{alpha_mapping[next_belief_id].vectors} , tabular : {tabular_mapping[next_belief_id].vectors}\n\t\t max_plane value :{alpha_mapping[next_belief_id].get_value(self.belief_space.get_belief(next_belief_id))} ,tabular value : {tabular_mapping[next_belief_id].get_value(self.belief_space.get_belief(next_belief_id))}  ")
+
+                break
+            # sys.exit() 
 
                      
 
