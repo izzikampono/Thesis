@@ -38,36 +38,36 @@ class PBVI:
     def backward_induction(self):
         #start loop from  horizon-1
         for timestep in range(self.horizon-1,-1,-1):
+            print(f"\n========== Backup at timestep {timestep} ==========")
+
             for belief_id in self.belief_space.time_index_table[timestep]:
                 self.value_function.backup(belief_id,timestep,self.gametype)
 
-            print(f"\n========== Backup at timestep {timestep} done, verification done ==========")
 
-            # flag = 0
-            # for belief_id in self.belief_space.time_index_table[timestep]:
-            #     belief = self.belief_space.get_belief(belief_id)
-            #     tabular_value = self.value_function.get_tabular_value_at_belief(belief_id,timestep)
-            #     max_alpha, max_alpha_value = self.value_function.get_max_alpha(belief,timestep)
-            #     alpha_belief_id =  self.value_function.get_alpha(timestep,belief_id)
-            #     # print(f"belief = {belief_id} ,   max_plane value {max_alpha_value} , tabular  {self.value_function.get_tabular_value_at_belief(belief_id,timestep)}")
-            #     if np.abs(max_alpha_value[0] - alpha_belief_id.get_value(belief)[0])> 0.01 :
-            #         # print(f"\nFOUND DIFFERENCE IN VERIFICATION! \nbelief_id {belief_id} = {belief.value} ")
+            print(f"\t\t\n========== Testing at timestep {timestep} / {self.horizon} done, verification done ==========")
+            for belief_id in self.belief_space.time_index_table[timestep]:
+                belief = self.belief_space.get_belief(belief_id)
+                tabular_value = self.value_function.get_tabular_value_at_belief(belief_id,timestep)
+                max_alpha, max_alpha_value = self.value_function.get_max_alpha(belief,timestep)
+                print(f"\t\tbelief: {belief_id} = {belief.value} , \tmaxplane-value: {max_alpha_value}, \ttabular-value:  {tabular_value}")
+                if np.abs(tabular_value[0] - max_alpha_value[0])> 0.01 :
+                    print(f"\t\t\tFOUND DIFFERENCE IN VERIFICATION! ")
+                    print(f"\t\tmax-plane alpha {max_alpha.vectors}, tabular alpha {self.value_function.point_value_fn[timestep][belief_id].vectors} ")
 
-            #         # print(f"\tmax alpha (from belief_id {max_alpha.belief_id}  = {self.belief_space.get_belief(max_alpha.belief_id).value}), {max_alpha.vectors} , value =   {max_alpha_value}\n\talpha from current belief_id =  {alpha_belief_id.vectors} , value = {alpha_belief_id.get_value(self.belief_space.get_belief(belief_id))}\n\n")
-            #         flag = 1
-                    
-            # if flag : sys.exit()
-                    
-                   
-                # for joint_action in CONSTANT.JOINT_ACTIONS:
-                #     for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
-                #         next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
-                #         if next_belief_id: 
-                #             if np.abs(max_alpha.get_value(belief)[0] - self.value_function.get_alpha(timestep+1,next_belief_id).get_value(belief)[0] ) > 0.01 :
-                #                 print(f"next_belief_id = {next_belief_id} \nmax alpha from belief_id = {next_belief_id}, {max_alpha.vectors} , value =   {max_alpha.get_value(self.belief_space.get_belief(next_belief_id))}\nalpha built on next_belief_id =  {self.value_function.get_alpha(timestep+1,next_belief_id).vectors} , value = {self.value_function.get_alpha(timestep,next_belief_id).get_value(self.belief_space.get_belief(next_belief_id))}")
-                #                 sys.exit()
-                
-            
+
+                    for joint_action in CONSTANT.JOINT_ACTIONS:
+                        print(f"\t\t\t joint_action:{joint_action}")
+                        for joint_observation in CONSTANT.JOINT_OBSERVATIONS:
+                            print(f"\t\t\t\t joint_observation:{joint_observation} proba:{Utilities.observation_probability(joint_observation, belief, joint_action)}")
+                            next_belief_id = self.belief_space.network.existing_next_belief_id(belief_id,joint_action,joint_observation)
+                            next_belief = self.belief_space.get_belief(next_belief_id)
+                            if next_belief_id is not None: #next_belief_id: 
+                                next_tabular_value = self.value_function.get_tabular_value_at_belief(next_belief_id,timestep+1)
+                                next_max_alpha, next_max_alpha_value = self.value_function.get_max_alpha(next_belief, timestep+1)
+                                print(f"\t\t\t\t\tbelief: {next_belief_id} = {next_belief.value} , \tmaxplane-value: {next_max_alpha_value} / {next_max_alpha.vectors} , \ttabular-value:  {next_tabular_value}  / {self.value_function.point_value_fn[timestep+1][next_belief_id].vectors}")
+                    sys.exit()
+
+    
     
                    
      
@@ -88,7 +88,7 @@ class PBVI:
         for _ in range(1,iterations+1):
             print(f"iteration : {_}")
             self.backward_induction()
-            values.append(self.value_function.get_max_plane_values_at_belief(belief=self.initial_belief,timestep=0))
+            values.append(self.value_function.get_max_alpha(belief=self.initial_belief,timestep=0)[1])
             times.append(time.time()-start_time)
             tabular_values.append(self.value_function.get_tabular_value_at_belief(belief_id=0,timestep=0))
         
@@ -97,7 +97,7 @@ class PBVI:
         # terminal result printing
         print(f"\n\n\n\n\n================================================= END OF {self.gametype} GAME WITH SOTA {self.sota} ======================================================================")
         print(f"\n\t\t\tpoint value at initial belief  {self.value_function.get_tabular_value_at_belief(belief_id=0,timestep=0)}")
-        print(f"\t\t\talphavectors value at inital belief (V0,V1) : {self.value_function.get_max_plane_values_at_belief(self.initial_belief,timestep=0)}")
+        print(f"\t\t\talphavectors value at inital belief (V0,V1) : {self.value_function.get_max_alpha(self.initial_belief,timestep=0)[1]}")
         print(f"\n\n==========================================================================================================================================================================")
 
         return values,times,tabular_values
@@ -130,7 +130,7 @@ class PBVI:
             self.backward_induction()
 
             # record measurements
-            values.append( self.value_function.get_max_plane_values_at_belief(self.initial_belief,timestep=0))
+            values.append( self.value_function.get_max_alpha(self.initial_belief,timestep=0))
             times.append(time.time()-start_time)
             tabular_values.append(self.value_function.get_tabular_value_at_belief(belief_id=0,timestep=0))
             belief_sizes.append(self.belief_space.belief_size())
@@ -143,7 +143,7 @@ class PBVI:
         # terminal result printing
         print("\n\n\n\n\n=========================================================== END ======================================================================")
         print(f"\npoint value at initial belief  {self.value_function.get_tabular_value_at_belief(belief_id=0,timestep=0)}")
-        print(f"alphavectors value at inital belief (V0,V1) : {self.value_function.get_max_plane_values_at_belief(self.initial_belief,timestep=0)}\n\n")
+        print(f"alphavectors value at inital belief (V0,V1) : {self.value_function.get_max_alpha(self.initial_belief,timestep=0)}\n\n")
        
               
         return values, times, densities , belief_sizes,tabular_values
@@ -157,13 +157,14 @@ class PBVI:
         #initialize policy and DR_bt
         policy = PolicyTree(None,None)
         belief = self.belief_space.get_belief(belief_id)
+        DR = None
 
         # extract decision rule of agent from value function at current belief
         max = -np.inf
         # extract decision rule of agent from value function at current belief
         for alpha in self.value_function.vector_sets[timestep]:
             value = alpha.get_value(belief)
-            if (max<value[0]) :
+            if max<value[0] :
                 max = value[0]
                 DR = alpha.DR
         # print(f"DR at timestep {timestep} , {DR.individual}")

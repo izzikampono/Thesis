@@ -128,8 +128,7 @@ class BeliefSpace:
 
 
         print(f"\tbelief expansion done, belief space size = {self.belief_size()}\n")
-        print(f"{[self.time_index_table[index] for index in range(len(self.time_index_table))]}")
-        # self.network.print_network()
+        # print(f"{[self.time_index_table[index] for index in range(len(self.time_index_table))]}")
 
     
        
@@ -165,15 +164,6 @@ class BeliefNetwork(BeliefSpace):
         self.network[belief_id][joint_action][joint_observation] = next_belief_id
         return
     
-    # def add_new_connection2(self,timestep,belief_id,joint_action,joint_observation,next_belief_id):
-    #     if timestep not in self.network.keys():
-    #         self.network[timestep] = {}
-    #     if belief_id not in self.network[timestep].keys(): 
-    #         self.network[timestep][belief_id]= {}
-    #     if joint_action not in self.network[timestep][belief_id]:
-    #         self.network[timestep][belief_id][joint_action] = {}
-    #     self.network[timestep][belief_id][joint_action][joint_observation] = next_belief_id
-    #     return
     
     def existing_next_belief_id(self,belief_id,joint_action,joint_observation):
         if belief_id in self.network.keys():
@@ -184,17 +174,6 @@ class BeliefNetwork(BeliefSpace):
 
                 else : return None
         return None
-
-    # def existing_next_belief_id2(self,timestep,belief_id,joint_action,joint_observation):
-    #     if timestep==self.horizon: return None
-    #     if belief_id in self.network[timestep].keys():
-    #         if joint_action in self.network[timestep][belief_id].keys():
-    #             if joint_observation in self.network[timestep][belief_id][joint_action].keys() and Utilities.observation_probability(joint_observation,self.belief_space.get_belief(belief_id),joint_action):
-    #                 next_belief_id = self.network[timestep][belief_id][joint_action][joint_observation]
-    #                 if next_belief_id!= None : return next_belief_id
-
-    #             else : return None
-    #     return None
     
     def print_network(self):
             for belief_id in self.network.keys():

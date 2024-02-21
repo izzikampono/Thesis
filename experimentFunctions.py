@@ -73,7 +73,7 @@ class Experiment():
                         if sota==False: WL_SF = values[-1] #take value at last iteration
                         if sota==True: SL_WF = values[-1]
                         print("\nEXTRACTING STACKELBERG POLICIES ... ")
-                    self.extract_policies(type,sota)
+                    # self.extract_policies(type,sota)
                     self.add_to_database(sota,horizon,type,
                                          iterations,times,game.belief_space.belief_size(),
                                          values,tabular_value,density)
